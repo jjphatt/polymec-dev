@@ -5,7 +5,7 @@ add_polymec_library(polymec_solvers
                     newton_pc.c bj_newton_pc.c newton_solver.c 
                     ode_solver.c am_ode_solver.c bdf_ode_solver.c 
                     ark_ode_solver.c euler_ode_solver.c dae_solver.c 
-                    fasmg_solver.c)
+                    fasmg_solver.c async_solver.c)
 set(POLYMEC_LIBRARIES polymec_solvers;${POLYMEC_LIBRARIES} PARENT_SCOPE)
 set(POLYMEC_LIBRARIES polymec_solvers;${POLYMEC_LIBRARIES})
 

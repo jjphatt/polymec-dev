@@ -18,5 +18,6 @@ add_polymec_solvers_test(test_jfnk_ark_ode_solver diurnal_solver.c create_krylov
 add_polymec_solvers_test(test_ink_ark_ode_solver diurnal_solver.c create_krylov_factories.c test_ink_ark_ode_solver.c)
 add_polymec_solvers_test(test_dae_solver heat2d_solver.c create_krylov_factories.c test_dae_solver.c)
 add_polymec_solvers_test(test_fasmg_solver test_fasmg_solver.c)
+add_polymec_solvers_test(test_async_solver test_async_solver.c)
 
 add_mpi_polymec_solvers_test(test_krylov_solver test_krylov_solver.c 1 2)
