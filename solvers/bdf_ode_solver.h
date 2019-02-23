@@ -8,9 +8,8 @@
 #ifndef POLYMEC_BDF_ODE_SOLVER_H
 #define POLYMEC_BDF_ODE_SOLVER_H
 
-#include "solvers/krylov_solver.h"
 #include "solvers/ode_solver.h"
-#include "solvers/newton_pc.h"
+#include "solvers/preconditioner.h"
 
 // This type of ODE solver integrates a stiff set of ordinary 
 // differential equations using Backwards Difference Formulae (BDF). These 

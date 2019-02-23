@@ -8,7 +8,7 @@
 #ifndef POLYMEC_LINEAR_SOLVER_H
 #define POLYMEC_LINEAR_SOLVER_H
 
-#include "core/polymec.h"
+#include "solvers/preconditioner.h"
 
 /// \addtogroup solvers solvers
 ///@{
@@ -33,6 +33,11 @@ linear_solver_t* linear_solver_from_SUNLinearSolver(SUNLinearSolver sundials_sol
 /// Frees a linear solver.
 /// \memberof linear_solver
 void linear_solver_free(linear_solver_t* solver);
+
+/// Sets the preconditioner to use with an iterative linear solver.
+/// \memberof linear_solver
+void linear_solver_set_preconditioner(linear_solver_t* solver,
+                                      preconditioner_t* pc);
 
 /// Returns the underlying Sundials linear solver.
 /// \memberof linear_solver

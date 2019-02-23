@@ -9,6 +9,7 @@
 #include "core/array.h"
 #include "core/timer.h"
 #include "solvers/bdf_ode_solver.h"
+#include "solvers/krylov_solver.h"
 #include "solvers/newton_pc.h"
 #include "cvode/cvode.h"
 

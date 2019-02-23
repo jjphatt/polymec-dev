@@ -28,12 +28,14 @@ typedef struct nvector_t nvector_t;
 // Here's the Sundials N_Vector type.
 typedef struct _generic_N_Vector* N_Vector;
 
-/// Creates an instance of an n-vector from the given Sundials N_Vector. The
-/// n-vector assumes ownership of the N_Vector.
+/// Creates an instance of an n-vector from the given Sundials N_Vector. 
 /// \param [in] sundials_nvector A Sundials N_Vector from which to create this 
 ///                              n-vector.
+/// \param [in] assume_ownership If true, the nvector assumes ownership of the Sundials 
+///                              vector. Otherwise it doesn't.
 /// \memberof nvector
-nvector_t* nvector_from_N_Vector(N_Vector sundials_nvector);
+nvector_t* nvector_from_N_Vector(N_Vector sundials_nvector,
+                                 bool assume_ownership);
 
 /// Frees an n-vector.
 /// \memberof nvector

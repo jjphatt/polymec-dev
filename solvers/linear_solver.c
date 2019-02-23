@@ -26,6 +26,12 @@ void linear_solver_free(linear_solver_t* solver)
   polymec_free(solver);
 }
 
+void linear_solver_set_preconditioner(linear_solver_t* solver,
+                                      preconditioner_t* pc)
+{
+  // FIXME
+}
+
 SUNLinearSolver linear_solver_as_SUNLinearSolver(linear_solver_t* solver)
 {
   return solver->s;

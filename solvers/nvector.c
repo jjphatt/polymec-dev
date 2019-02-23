@@ -11,18 +11,22 @@
 struct nvector_t 
 {
   N_Vector v;
+  bool owns;
 };
 
-nvector_t* nvector_from_N_Vector(N_Vector sundials_nvector)
+nvector_t* nvector_from_N_Vector(N_Vector sundials_nvector,
+                                 bool assume_ownership)
 {
   nvector_t* v = polymec_malloc(sizeof(nvector_t));
   v->v = sundials_nvector;
+  v->owns = assume_ownership;
   return v;
 }
 
 void nvector_free(nvector_t* v)
 {
-  N_VDestroy(v->v);
+  if (v->owns)
+    N_VDestroy(v->v);
   polymec_free(v);
 }
 
