@@ -69,8 +69,8 @@ scotch = {
 },
 
 sundials = {
-  version = '4.0.2',
-  copyright = 'Copyright (c) 2002-2016, Lawrence Livermore National Security.\n' .. 
+  version = '4.1.0',
+  copyright = 'Copyright (c) 2002-2019, Lawrence Livermore National Security.\n' .. 
               'Produced at the Lawrence Livermore National Laboratory.\n' .. 
               'Written by A.C. Hindmarsh, D.R. Reynolds, R. Serban, C.S. Woodward,\n' .. 
               'S.D. Cohen, A.G. Taylor, S. Peles, L.E. Banks, and D. Shumaker.\n' ..
@@ -83,7 +83,7 @@ sundials = {
               'All rights reserved.',
   license = 'BSD',
   url = 'https://computation.llnl.gov/projects/sundials/sundials-software',
-  date_retrieved = {month=2, day=9, year=2019},
+  date_retrieved = {month=2, day=21, year=2019},
   citation = 'Alan C. Hindmarsh, Peter N. Brown, Keith E. Grant, Steven L. Lee, Radu ' .. 
              'Serban, Dan E. Shumaker, and Carol S. Woodward. 2005. SUNDIALS: Suite of ' .. 
              'nonlinear and differential/algebraic equation solvers. ACM Trans. Math. Softw. ' .. 

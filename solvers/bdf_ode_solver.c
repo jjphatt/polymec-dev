@@ -20,9 +20,6 @@
 
 #include "sunnonlinsol/sunnonlinsol_newton.h"
 
-// Stuff for generalized BDF solvers.
-#include "cvode/cvode_impl.h"
-
 struct bdf_ode_observer_t 
 {
   void* context;

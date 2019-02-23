@@ -17,9 +17,6 @@
 #include "sunlinsol/sunlinsol_spbcgs.h"
 #include "sunlinsol/sunlinsol_sptfqmr.h"
 
-// Stuff for generalized solvers.
-#include "ida/ida_impl.h"
-
 // These symbols represent special short-hand arguments for equation types 
 // and constraints.
 static dae_equation_t DAE_ALL_ALGEBRAIC_LOC = DAE_ALGEBRAIC;
