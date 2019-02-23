@@ -1,6 +1,7 @@
 include(add_polymec_library)
 add_polymec_library(polymec_solvers nvector.c matrix.c
                     linear_solver.c preconditioner.c nonlinear_solver.c
+                    hypre_factory.c petsc_factory.c
                     dense_newton_solver.c
                     bd_matrix.c matrix_sparsity.c krylov_solver.c 
                     petsc_krylov_solver.c petsc_krylov_solver_32.c petsc_krylov_solver_64.c
