@@ -20,6 +20,7 @@
 /// \class hypre_factory
 /// This factory provides access to the solvers, matrices, and vectors in 
 /// the HYPRE library.
+/// \refcounted
 typedef struct hypre_factory_t hypre_factory_t;
 
 /// Returns true if the HYPRE factory is available, depending on whether 
@@ -40,9 +41,6 @@ bool hypre_factory_available(bool use_64_bit_indices);
 ///          constructed.
 /// \memberof hypre_factory
 hypre_factory_t* hypre_factory_new(bool use_64_bit_indices);
-
-/// Destroys the given hypre factory, freeing its resources.
-void hypre_factory_free(hypre_factory_t* factory);
 
 /// Returns true if the factory supports 64-bit indices, false if not.
 /// \memberof hypre_factory

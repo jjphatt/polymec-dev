@@ -145,6 +145,7 @@ void exchanger_disable_deadlock_detection(exchanger_t* ex);
 bool exchanger_deadlock_detection_enabled(exchanger_t* ex);
 
 /// This writes a string representation of the exchanger to the given file stream.
+/// \param [out] stream The file to which the exchanger is written.
 /// \memberof exchanger
 void exchanger_fprintf(exchanger_t* ex, FILE* stream);
 

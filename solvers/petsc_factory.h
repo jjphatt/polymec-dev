@@ -20,6 +20,7 @@
 /// \class petsc_factory
 /// This factory provides access to the solvers, matrices, and vectors in 
 /// the PETSc library.
+/// \refcounted
 typedef struct petsc_factory_t petsc_factory_t;
 
 /// Returns true if the PETSc factory is available, depending on whether 
@@ -40,9 +41,6 @@ bool petsc_factory_available(bool use_64_bit_indices);
 ///          constructed.
 /// \memberof petsc_factory
 petsc_factory_t* petsc_factory_new(bool use_64_bit_indices);
-
-/// Destroys the given PETSc factory, freeing its resources.
-void petsc_factory_free(petsc_factory_t* factory);
 
 /// Returns true if the factory supports 64-bit indices, false if not.
 /// \memberof petsc_factory

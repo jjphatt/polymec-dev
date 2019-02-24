@@ -134,6 +134,7 @@ static inline void tensor2_invert(tensor2_t* t, tensor2_t* t_inverse)
 }
 
 /// Writes a text representation of the tensor to the given stream.
+/// \param [out] stream The file to which the tensor2 is written.
 /// \memberof tensor2
 void tensor2_fprintf(tensor2_t* t, FILE* stream);
 
@@ -257,6 +258,7 @@ void symtensor2_get_eigenvectors(symtensor2_t* t,
                                  vector_t eigenvectors[3]);
 
 /// Writes a text representation of the symmetric tensor to the given stream.
+/// \param [out] stream The file to which the symtensor2 is written.
 /// \memberof symtensor2
 void symtensor2_fprintf(symtensor2_t* t, FILE* stream);
 

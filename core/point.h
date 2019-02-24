@@ -79,6 +79,7 @@ static inline void point_copy(point_t* dest, point_t* source)
 }
 
 /// Writes a text representation of the point to the given file.
+/// \param [out] stream The file to which the point is written.
 /// \memberof point
 void point_fprintf(point_t* x, FILE* stream);
 
@@ -306,6 +307,7 @@ void bbox_grow(bbox_t* box, point_t* p);
 void bbox_make_empty_set(bbox_t* box);
 
 /// Writes a text representation of the bounding box to the given file.
+/// \param [out] stream The file to which the bbox is written.
 /// \memberof bbox
 void bbox_fprintf(bbox_t* box, FILE* stream);
 

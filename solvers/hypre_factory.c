@@ -16,6 +16,15 @@ struct hypre_factory_t
   hypre_factory_64_t* f64;
 };
 
+static void hypre_factory_free(void* context)
+{
+  hypre_factory_t* factory = context;
+  if (factory->f64 != NULL)
+    release_ref(factory->f64);
+  else
+    release_ref(factory->f32);
+}
+
 bool hypre_factory_available(bool use_64_bit_indices)
 {
   hypre_factory_t* factory = hypre_factory_new(use_64_bit_indices);
@@ -35,12 +44,14 @@ hypre_factory_t* hypre_factory_new(bool use_64_bit_indices)
     hypre_factory_64_t* f = hypre_factory_64_new();
     if (f != NULL)
     {
-      hypre_factory_t* factory = polymec_malloc(sizeof(hypre_factory_t));
+      hypre_factory_t* factory = polymec_refcounted_malloc(sizeof(hypre_factory_t), 
+                                                           hypre_factory_free);
       factory->f64 = f;
       return factory;
     }
     else
       return NULL;
+  }
   else
   {
     hypre_factory_32_t* f = hypre_factory_32_new();
@@ -55,15 +66,6 @@ hypre_factory_t* hypre_factory_new(bool use_64_bit_indices)
   }
 }
 
-void hypre_factory_free(hypre_factory_t* factory)
-{
-  if (factory->f64 != NULL)
-    hypre_factory_64_free(factory->f64);
-  else
-    hypre_factory_32_free(factory->f32);
-  polymec_free(hypre_factory_t);
-}
-
 bool hypre_factory_has_64_bit_indices(hypre_factory_t* factory)
 {
   return (factory->f64 != NULL);
@@ -74,10 +76,11 @@ extern matrix_t* hypre_factory_64_matrix(hypre_factory_64_t*, matrix_sparsity_t*
 matrix_t* hypre_factory_matrix(hypre_factory_t* factory, 
                                matrix_sparsity_t* sparsity)
 {
+  matrix_t* A = NULL;
   if (factory->f64 != NULL)
-    return hypre_factory_64_matrix(factory->f64, sparsity);
+    A = hypre_factory_64_matrix(factory->f64, sparsity);
   else
-    return hypre_factory_32_matrix(factory->f32, sparsity);
+    A = hypre_factory_32_matrix(factory->f32, sparsity);
 }
 
 extern matrix_t* hypre_factory_32_block_matrix(hypre_factory_32_t*, matrix_sparsity_t*, int);

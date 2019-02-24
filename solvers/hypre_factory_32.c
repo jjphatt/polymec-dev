@@ -6,6 +6,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 typedef int32_t HYPRE_Int;
-#define HypreFactory hypre_factory_32
+#define HYPRE_FACTORY hypre_factory_32
 #include "solvers/hypre_factory_impl.c"
 

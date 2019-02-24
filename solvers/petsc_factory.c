@@ -16,6 +16,15 @@ struct petsc_factory_t
   petsc_factory_64_t* f64;
 };
 
+static void petsc_factory_free(void* context)
+{
+  petsc_factory_t* factory = context;
+  if (factory->f64 != NULL)
+    release_ref(factory->f64);
+  else
+    release_ref(factory->f32);
+}
+
 bool petsc_factory_available(bool use_64_bit_indices)
 {
   petsc_factory_t* factory = petsc_factory_new(use_64_bit_indices);
@@ -35,7 +44,8 @@ petsc_factory_t* petsc_factory_new(bool use_64_bit_indices)
     petsc_factory_64_t* f = petsc_factory_64_new();
     if (f != NULL)
     {
-      petsc_factory_t* factory = polymec_malloc(sizeof(petsc_factory_t));
+      petsc_factory_t* factory = polymec_refcounted_malloc(sizeof(petsc_factory_t),
+                                                           petsc_factory_free);
       factory->f64 = f;
       return factory;
     }
@@ -53,15 +63,6 @@ petsc_factory_t* petsc_factory_new(bool use_64_bit_indices)
     else
       return NULL;
   }
-}
-
-void petsc_factory_free(petsc_factory_t* factory)
-{
-  if (factory->f64 != NULL)
-    petsc_factory_64_free(factory->f64);
-  else
-    petsc_factory_32_free(factory->f32);
-  polymec_free(petsc_factory_t);
 }
 
 bool petsc_factory_has_64_bit_indices(petsc_factory_t* factory)

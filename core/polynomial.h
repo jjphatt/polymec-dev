@@ -132,6 +132,7 @@ bool polynomial_equals(polynomial_t* p, polynomial_t* q);
 sp_func_t* polynomial_sp_func(polynomial_t* p);
 
 /// Writes a text representation of the polynomial to the given stream.
+/// \param [out] stream The file to which the polynomial is written.
 /// \memberof polynomial
 void polynomial_fprintf(polynomial_t* p, FILE* stream);
 

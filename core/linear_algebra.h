@@ -367,12 +367,6 @@ void rsyev(char* jobz, char* uplo, int* n, real_t* A, int* lda, real_t* W,
            real_t* work, int* lwork, int* info);
 ///@}
 
-/// Prints a (column-major-ordered) matrix to the given file stream.
-void matrix_fprintf(real_t* matrix, int nr, int nc, FILE* stream);
-
-/// Prints a vector to the given file stream.
-void vector_fprintf(real_t* vec, int nr, FILE* stream);
-
 /// Computes the determinant of the given 2x2 matrix.
 real_t matrix2_det(real_t* matrix);
 

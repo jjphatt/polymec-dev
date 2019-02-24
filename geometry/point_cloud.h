@@ -85,6 +85,7 @@ void point_cloud_rename_tag(point_cloud_t* cloud, const char* old_tag, const cha
 void point_cloud_delete_tag(point_cloud_t* cloud, const char* tag);
 
 /// Writes a text representation of the point cloud to the given file stream.
+/// \param [out] stream The file to which the point cloud is written.
 /// \memberof point_cloud
 void point_cloud_fprintf(point_cloud_t* cloud, FILE* stream);
 

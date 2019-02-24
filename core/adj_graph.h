@@ -176,6 +176,7 @@ bool adj_graph_sort(adj_graph_t* graph, int* sorted_vertices);
 void adj_graph_manage_arrays(adj_graph_t* graph, bool flag);
 
 /// Prints a textual representation of the graph to the given file.
+/// \param [out] stream The file to which the graph is written.
 /// \memberof adj_graph
 void adj_graph_fprintf(adj_graph_t* graph, FILE* stream);
 
