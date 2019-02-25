@@ -23,6 +23,78 @@ typedef struct linear_solver_t linear_solver_t;
 // Here's the Sundials linear solver type.
 typedef struct _generic_SUNLinearSolver* SUNLinearSolver;
 
+/// This virtual table defines the behavior for a linear solver. Because the 
+/// solver class is implemented using the SUNLinearSolver type, all methods use 
+/// SUNLinearSolver objects instead of raw context pointers. All methods
+/// with int return values return 0 on success and nonzero on failure.
+typedef struct
+{
+  int (*setscalingvectors)(SUNLinearSolver, N_Vector, N_Vector);
+  int (*initialize)(SUNLinearSolver);
+  int (*setup)(SUNLinearSolver, SUNMatrix);
+  int (*solve)(SUNLinearSolver, SUNMatrix, N_Vector, N_Vector, realtype);
+  int (*numiters)(SUNLinearSolver);
+  real_t (*resnorm)(SUNLinearSolver);
+  long int (*lastflag)(SUNLinearSolver);
+  int (*space)(SUNLinearSolver, long int*, long int*);
+  N_Vector (*resid)(SUNLinearSolver);
+  int (*free)(SUNLinearSolver);
+} linear_solver_vtable;
+
+/// \enum linear_solver_type_t;
+/// This enumerated type describes types of linear solvers.
+typedef enum
+{
+  DIRECT_LINEAR_SOLVER,
+  ITERATIVE_LINEAR_SOLVER,
+  MATRIX_FREE_LINEAR_SOLVER
+} linear_solver_type;
+
+/// Creates an instance of a direct linear solver on the given communicator. 
+/// \param [in] comm The MPI communicator on which the solver lives.
+/// \param [in] context A pointer to data for the solver.
+/// \param [in] vtable A virtual table defining the behavior of the solver.
+/// \memberof linear_solver
+linear_solver_t* direct_linear_solver_new(MPI_Comm comm, 
+                                          void* context, 
+                                          linear_solver_vtable vtable);
+
+/// Creates an instance of an iterative linear solver on the given communicator. 
+/// This solver requires a matrix, but solves the linear system iteratively.
+/// \param [in] comm The MPI communicator on which the solver lives.
+/// \param [in] context A pointer to data for the solver.
+/// \param [in] vtable A virtual table defining the behavior of the solver.
+/// \param [in] p The preconditioner to use for the iterative solution.
+/// \param [in] max_iterations The maximum number of iterations for the solve.
+/// \param [in] tolerance The tolerance for the residual norm.
+/// \memberof linear_solver
+linear_solver_t* iterative_linear_solver_new(MPI_Comm comm, 
+                                             void* context, 
+                                             linear_solver_vtable vtable,
+                                             preconditioner_t* p,
+                                             int max_iterations,
+                                             real_t tolerance);
+
+/// Creates an instance of an iterative linear solver on the given communicator. 
+/// This solver does not require a matrix. Instead, one provides a function that 
+/// computes the product of a linear operator with a vector.
+/// \param [in] comm The MPI communicator on which the solver lives.
+/// \param [in] context A pointer to data for the solver.
+/// \param [in] vtable A virtual table defining the behavior of the solver.
+/// \param [in] A_times A function that computes the product of a linear operator 
+///                     with a vector.
+/// \param [in] p The preconditioner to use for the iterative solution.
+/// \param [in] max_iterations The maximum number of iterations for the solve.
+/// \param [in] tolerance The tolerance for the residual norm.
+/// \memberof linear_solver
+linear_solver_t* matrix_free_linear_solver_new(MPI_Comm comm, 
+                                               void* context, 
+                                               linear_solver_vtable vtable,
+                                               int (*A_times)(void* context, N_vector v, N_Vector Av),
+                                               preconditioner_t* p,
+                                               int max_iterations,
+                                               real_t tolerance);
+
 /// Creates an instance of a linear solver from the given Sundials solver. This
 /// solver assumes ownership of the Sundials one.
 /// \param [in] sundials_solver A Sundials linear solver from which to create 
@@ -34,14 +106,12 @@ linear_solver_t* linear_solver_from_SUNLinearSolver(SUNLinearSolver sundials_sol
 /// \memberof linear_solver
 void linear_solver_free(linear_solver_t* solver);
 
-/// Sets the preconditioner to use with an iterative linear solver.
-/// \memberof linear_solver
-void linear_solver_set_preconditioner(linear_solver_t* solver,
-                                      preconditioner_t* pc);
-
 /// Returns the underlying Sundials linear solver.
 /// \memberof linear_solver
 SUNLinearSolver linear_solver_as_SUNLinearSolver(linear_solver_t* solver);
+
+/// Returns the type of this linear solver.
+linear_solver_type_t linear_solver_type(linear_solver_t* solver);
 
 ///@}
 

@@ -76,11 +76,10 @@ extern matrix_t* hypre_factory_64_matrix(hypre_factory_64_t*, matrix_sparsity_t*
 matrix_t* hypre_factory_matrix(hypre_factory_t* factory, 
                                matrix_sparsity_t* sparsity)
 {
-  matrix_t* A = NULL;
   if (factory->f64 != NULL)
-    A = hypre_factory_64_matrix(factory->f64, sparsity);
+    return hypre_factory_64_matrix(factory->f64, sparsity);
   else
-    A = hypre_factory_32_matrix(factory->f32, sparsity);
+    return hypre_factory_32_matrix(factory->f32, sparsity);
 }
 
 extern matrix_t* hypre_factory_32_block_matrix(hypre_factory_32_t*, matrix_sparsity_t*, int);

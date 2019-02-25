@@ -110,7 +110,7 @@ linear_solver_t* hypre_factory_bicgstab_solver(hypre_factory_t* factory,
 /// Constructs a simple diagonal scaling preconditioner for a linear solver.
 /// function returns NULL.
 /// \memberof hypre_factory
-preconditioner_t* hypre_factory_diag_scaling_preconditioner(hypre_factory_t* factory)
+preconditioner_t* hypre_factory_diag_scaling_preconditioner(hypre_factory_t* factory);
 
 ///@}
 

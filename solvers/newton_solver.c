@@ -8,6 +8,7 @@
 #include "core/sundials_helpers.h"
 #include "core/timer.h"
 #include "solvers/newton_solver.h"
+#include "solvers/krylov_solver.h"
 
 // We use KINSOL for doing the matrix-free nonlinear solve.
 #include "sunlinsol/sunlinsol_spgmr.h"

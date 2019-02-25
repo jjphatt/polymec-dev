@@ -159,7 +159,7 @@ nvector_t* nvector_clone(nvector_t* v)
 
 void nvector_copy(nvector_t* v, nvector_t* copy)
 {
-  return v->vtable.nvscale(1.0, v->v, copy->v);
+  v->vtable.nvscale(1.0, v->v, copy->v);
 }
 
 int nvector_local_size(nvector_t* v)

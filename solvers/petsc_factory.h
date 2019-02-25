@@ -110,7 +110,7 @@ linear_solver_t* petsc_factory_bicgstab_solver(petsc_factory_t* factory,
 /// Constructs a simple diagonal scaling preconditioner for a linear solver.
 /// function returns NULL.
 /// \memberof petsc_factory
-preconditioner_t* petsc_factory_diag_scaling_preconditioner(petsc_factory_t* factory)
+preconditioner_t* petsc_factory_diag_scaling_preconditioner(petsc_factory_t* factory);
 
 ///@}
 

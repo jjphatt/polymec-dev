@@ -9,7 +9,6 @@
 #define POLYMEC_NEWTON_SOLVER_H
 
 #include "core/polymec.h"
-#include "solvers/krylov_solver.h"
 #include "solvers/newton_pc.h"
 
 /// \addtogroup solvers solvers

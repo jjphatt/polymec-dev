@@ -51,6 +51,7 @@ petsc_factory_t* petsc_factory_new(bool use_64_bit_indices)
     }
     else
       return NULL;
+  }
   else
   {
     petsc_factory_32_t* f = petsc_factory_32_new();
