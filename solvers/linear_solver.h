@@ -23,21 +23,25 @@ typedef struct linear_solver_t linear_solver_t;
 // Here's the Sundials linear solver type.
 typedef struct _generic_SUNLinearSolver* SUNLinearSolver;
 
+typedef struct _generic_SUNMatrix* SUNMatrix;
+
 /// This virtual table defines the behavior for a linear solver. Because the 
 /// solver class is implemented using the SUNLinearSolver type, all methods use 
 /// SUNLinearSolver objects instead of raw context pointers. All methods
 /// with int return values return 0 on success and nonzero on failure.
 typedef struct
 {
-  int (*setscalingvectors)(SUNLinearSolver, N_Vector, N_Vector);
+  /// Sets left and right scaling vectors s1 and s2 for the solve.
+  int (*setscalingvectors)(SUNLinearSolver, N_Vector s1, N_Vector s2);
+  /// Initializes the solver.
   int (*initialize)(SUNLinearSolver);
-  int (*setup)(SUNLinearSolver, SUNMatrix);
-  int (*solve)(SUNLinearSolver, SUNMatrix, N_Vector, N_Vector, realtype);
-  int (*numiters)(SUNLinearSolver);
-  real_t (*resnorm)(SUNLinearSolver);
-  long int (*lastflag)(SUNLinearSolver);
-  int (*space)(SUNLinearSolver, long int*, long int*);
-  N_Vector (*resid)(SUNLinearSolver);
+  /// Performs pre-solve setup. Matrix argument can be ignored for matrix-free solvers.
+  int (*setup)(SUNLinearSolver, SUNMatrix A);
+  /// Performs the linear solve, terminating when the residual norm falls below the tolerance.
+  int (*solve)(SUNLinearSolver, SUNMatrix A, N_Vector x, N_Vector b, real_t tolerance);
+  /// Estimates the space needed for the solver in real words (lrw) and integer words (liw). (Optional)
+  int (*space)(SUNLinearSolver, long int* lrw, long int* liw);
+  /// Destroys the solver.
   int (*free)(SUNLinearSolver);
 } linear_solver_vtable;
 
@@ -48,7 +52,7 @@ typedef enum
   DIRECT_LINEAR_SOLVER,
   ITERATIVE_LINEAR_SOLVER,
   MATRIX_FREE_LINEAR_SOLVER
-} linear_solver_type;
+} linear_solver_type_t;
 
 /// Creates an instance of a direct linear solver on the given communicator. 
 /// \param [in] comm The MPI communicator on which the solver lives.
@@ -90,7 +94,7 @@ linear_solver_t* iterative_linear_solver_new(MPI_Comm comm,
 linear_solver_t* matrix_free_linear_solver_new(MPI_Comm comm, 
                                                void* context, 
                                                linear_solver_vtable vtable,
-                                               int (*A_times)(void* context, N_vector v, N_Vector Av),
+                                               int (*A_times)(void* context, N_Vector v, N_Vector Av),
                                                preconditioner_t* p,
                                                int max_iterations,
                                                real_t tolerance);

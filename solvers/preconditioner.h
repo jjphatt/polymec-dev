@@ -62,6 +62,14 @@ void preconditioner_free(preconditioner_t* pc);
 /// Returns the "sided-ness" of the preconditioner.
 preconditioner_side_t preconditioner_sidedness(preconditioner_t* pc);
 
+/// Sets up the preconditioner system P*z = r.
+/// \returns 0 on success, nonzero on failure.
+int preconditioner_set_up(preconditioner_t* pc);
+
+/// Solves the preconditioner system P*z = r.
+/// \returns 0 on success, nonzero on failure.
+int preconditioner_solve(preconditioner_t* pc, nvector_t* z, nvector_t* r);
+
 ///@}
 
 #endif

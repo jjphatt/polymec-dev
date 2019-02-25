@@ -40,3 +40,15 @@ preconditioner_side_t preconditioner_sidedness(preconditioner_t* pc)
   return pc->side;
 }
 
+int preconditioner_set_up(preconditioner_t* pc)
+{
+  // FIXME
+  return 0;
+}
+
+int preconditioner_solve(preconditioner_t* pc, nvector_t* z, nvector_t* r)
+{
+  // FIXME
+  return 0;
+}
+
