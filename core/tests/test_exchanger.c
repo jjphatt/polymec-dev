@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -14,8 +14,8 @@
 
 static void test_exchanger_new(void** state)
 {
-  exchanger_t* exchanger = exchanger_new(MPI_COMM_WORLD);
-  exchanger = NULL;
+  exchanger_t* ex = exchanger_new(MPI_COMM_WORLD);
+  release_ref(ex);
 }
 
 static void test_exchanger_construct(void** state)
@@ -25,20 +25,20 @@ static void test_exchanger_construct(void** state)
   MPI_Comm_size(comm, &nproc);
   MPI_Comm_rank(comm, &rank);
   int N = 100*nproc;
-  exchanger_t* exchanger = exchanger_new(comm);
-  assert_true(exchanger_comm(exchanger) == comm);
+  exchanger_t* ex = exchanger_new(comm);
+  assert_true(exchanger_comm(ex) == comm);
   if (nproc > 1)
   {
     int send_indices[N/nproc];
     for (int i = 0; i < N/nproc; ++i)
       send_indices[i] = i;
-    exchanger_set_send(exchanger, (rank+1) % nproc, send_indices, N/nproc, true);
+    exchanger_set_send(ex, (rank+1) % nproc, send_indices, N/nproc, true);
     int receive_indices[N/nproc];
     for (int i = 0; i < N/nproc; ++i)
       receive_indices[i] = i;
-    exchanger_set_receive(exchanger, (rank+nproc-1) % nproc, receive_indices, N/nproc, true);
+    exchanger_set_receive(ex, (rank+nproc-1) % nproc, receive_indices, N/nproc, true);
   }
-  exchanger = NULL;
+  release_ref(ex);
 }
 
 static void test_exchanger_construct_and_delete(void** state)
@@ -48,29 +48,29 @@ static void test_exchanger_construct_and_delete(void** state)
   MPI_Comm_size(comm, &nproc);
   MPI_Comm_rank(comm, &rank);
   int N = 100*nproc;
-  exchanger_t* exchanger = exchanger_new(comm);
-  exchanger_set_send_offset(exchanger, 0);
-  exchanger_set_receive_offset(exchanger, 0);
+  exchanger_t* ex = exchanger_new(comm);
+  exchanger_set_send_offset(ex, 0);
+  exchanger_set_receive_offset(ex, 0);
   if (nproc > 1)
   {
     int send_indices[N/nproc];
     for (int i = 0; i < N/nproc; ++i)
       send_indices[i] = i;
-    exchanger_set_send(exchanger, (rank+1) % nproc, send_indices, N/nproc, true);
-    assert_true(exchanger_max_send(exchanger) != rank);
+    exchanger_set_send(ex, (rank+1) % nproc, send_indices, N/nproc, true);
+    assert_true(exchanger_max_send(ex) != rank);
     int receive_indices[N/nproc];
     for (int i = 0; i < N/nproc; ++i)
       receive_indices[i] = i;
-    exchanger_set_receive(exchanger, (rank+nproc-1) % nproc, receive_indices, N/nproc, true);
-    assert_true(exchanger_max_receive(exchanger) != rank);
+    exchanger_set_receive(ex, (rank+nproc-1) % nproc, receive_indices, N/nproc, true);
+    assert_true(exchanger_max_receive(ex) != rank);
 
-    exchanger_delete_send(exchanger, 1);
-    exchanger_delete_receive(exchanger, 1);
+    exchanger_delete_send(ex, 1);
+    exchanger_delete_receive(ex, 1);
   }
-  exchanger = NULL;
+  release_ref(ex);
 }
 
-static void test_exchanger_verify_and_dl_detection(void** state)
+static void test_exchanger_is_valid_and_dl_detection(void** state)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
   int nproc, rank;
@@ -79,8 +79,8 @@ static void test_exchanger_verify_and_dl_detection(void** state)
 
   real_t grace_period = 0.2;
 
-  // First we put together a bad exchanger and check that verify tells us 
-  // it's bad, and that deadlock detection captures the deadlock.
+  // First we put together a bad exchanger and check that exchanger_is_valid
+  // tells us it's bad, and that deadlock detection captures the deadlock.
   exchanger_t* ex = exchanger_new(comm);
   exchanger_enable_deadlock_detection(ex, grace_period, 0, stdout);
   assert_true(exchanger_deadlock_detection_enabled(ex));
@@ -93,21 +93,21 @@ static void test_exchanger_verify_and_dl_detection(void** state)
     exchanger_set_receive(ex, (rank+1) % nproc, receive_indices, 100, true);
 
     // Verify that it's a bad exchanger.
-    bool result = exchanger_verify(ex, polymec_warn);
-    assert_false(result); 
-    result = exchanger_verify(ex, NULL);
-    assert_false(result); 
+    char* reason;
+    bool result = exchanger_is_valid(ex, &reason);
+    assert_false(result);
+    log_debug("Exchanger is invalid (expected): %s", reason);
+    result = exchanger_is_valid(ex, NULL);
+    assert_false(result);
 
     // Now try to exchange data.
     long data[100];
     for (int i = 0; i < 100; ++i)
       data[i] = (long)rank;
     exchanger_exchange(ex, data, 1, 0, MPI_LONG);
-//printf("%d %d\n", (int)data[0], rank);
-//    assert_true(data[0] == (long)rank); // FIXME
   }
 
-  // Next, we put together a good exchanger and check that verify/deadlock 
+  // Next, we put together a good exchanger and check that is_valid/deadlock
   // detection give it a pass.
   release_ref(ex);
   ex = exchanger_new(comm);
@@ -128,9 +128,10 @@ static void test_exchanger_verify_and_dl_detection(void** state)
     exchanger_set_send(ex, send_proc, send_indices, 100, true);
 
     // Verify that it's a good exchanger.
-    bool result = exchanger_verify(ex, polymec_warn);
+    char* reason;
+    bool result = exchanger_is_valid(ex, &reason);
     assert_true(result);
-    result = exchanger_verify(ex, NULL);
+    result = exchanger_is_valid(ex, NULL);
     assert_true(result);
 
     // Now try to exchange data.
@@ -158,7 +159,7 @@ static void test_exchanger_local_copy(void** state)
 {
   exchanger_t* ex = exchanger_new(MPI_COMM_SELF);
 
-  // The exchanger copies values at even indices to odd ones, and values at odd 
+  // The exchanger copies values at even indices to odd ones, and values at odd
   // indices to even ones.
   int send_indices[100], receive_indices[100];
   for (int i = 0; i < 100; ++i)
@@ -173,7 +174,7 @@ static void test_exchanger_local_copy(void** state)
   exchanger_set_receive(ex, 0, receive_indices, 100, true);
 
   // Verify that it's a good exchanger.
-  bool result = exchanger_verify(ex, polymec_warn);
+  bool result = exchanger_is_valid(ex, NULL);
   assert_true(result);
 
   // Now try to exchange data.
@@ -216,7 +217,7 @@ static void test_exchanger_reduce(void** state)
   assert_true(exchanger_aggregates_data(ex) || (nproc == 1));
 
   // Verify that it's a good exchanger.
-  bool result = exchanger_verify(ex, polymec_warn);
+  bool result = exchanger_is_valid(ex, NULL);
   assert_true(result);
 
   // Now try to exchange data.
@@ -263,15 +264,15 @@ static void test_exchanger_reduce(void** state)
   release_ref(ex);
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
   polymec_init(argc, argv);
-  const struct CMUnitTest tests[] = 
+  const struct CMUnitTest tests[] =
   {
     cmocka_unit_test(test_exchanger_new),
     cmocka_unit_test(test_exchanger_construct),
     cmocka_unit_test(test_exchanger_construct_and_delete),
-    cmocka_unit_test(test_exchanger_verify_and_dl_detection),
+    cmocka_unit_test(test_exchanger_is_valid_and_dl_detection),
     cmocka_unit_test(test_exchanger_local_copy),
     cmocka_unit_test(test_exchanger_reduce)
   };

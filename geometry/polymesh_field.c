@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -23,16 +23,16 @@ polymesh_field_t* polymesh_field_new(polymesh_t* mesh,
   field->ex = NULL;
   switch (centering)
   {
-    case POLYMESH_CELL: 
-      field->num_local_values = mesh->num_cells; 
+    case POLYMESH_CELL:
+      field->num_local_values = mesh->num_cells;
       break;
-    case POLYMESH_FACE: 
-      field->num_local_values = mesh->num_faces; 
+    case POLYMESH_FACE:
+      field->num_local_values = mesh->num_faces;
       break;
-    case POLYMESH_EDGE: 
-      field->num_local_values = mesh->num_edges; 
+    case POLYMESH_EDGE:
+      field->num_local_values = mesh->num_edges;
       break;
-    case POLYMESH_NODE: 
+    case POLYMESH_NODE:
       field->num_local_values = mesh->num_nodes;
   }
 
@@ -112,6 +112,6 @@ void polymesh_field_set_exchanger(polymesh_field_t* field, exchanger_t* ex)
 real_enumerable_generator_t* polymesh_field_enumerate(polymesh_field_t* field)
 {
   size_t num_values = field->num_components * field->capacity;
-  return real_enumerable_generator_from_array(field->data, num_values, NULL);
+  return real_enumerable_generator_from_array(field->data, num_values, false);
 }
 

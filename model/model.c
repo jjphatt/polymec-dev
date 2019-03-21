@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -38,7 +38,7 @@ static inline bool probe_equals(probe_t* p, probe_t* q)
 DEFINE_UNORDERED_MAP(probe_map, probe_t*, real_array_t*, probe_hash, probe_equals)
 DEFINE_UNORDERED_MAP(probe_data_map, char*, probe_data_array_t*, string_hash, string_equals)
 
-// This catches the SIGINT (Ctrl-C) signal and sets a flag for the model 
+// This catches the SIGINT (Ctrl-C) signal and sets a flag for the model
 // to respond appropriately.
 typedef void (*sighandler_t)(int sig);
 static int _received_signal = 0;
@@ -48,7 +48,7 @@ static void handle_sigint_or_sigterm(int signal)
   _received_signal = signal;
 }
 
-struct model_t 
+struct model_t
 {
   // Model metadata.
   void* context;
@@ -91,12 +91,12 @@ struct model_t
 // Here's a static set of all named model instances.
 static string_unordered_set_t* model_singletons = NULL;
 
-// This helper ensures that the given model is the only instance of its 
-// type in memory if it has parallelism type MPI_SERIAL_SINGLETON or 
+// This helper ensures that the given model is the only instance of its
+// type in memory if it has parallelism type MPI_SERIAL_SINGLETON or
 // MPI_PARALLEL_SINGLETON.
 static void enforce_singleton_instances(model_t* model)
 {
-  if ((model->parallelism == MODEL_SERIAL_SINGLETON) || 
+  if ((model->parallelism == MODEL_SERIAL_SINGLETON) ||
       (model->parallelism == MODEL_MPI_SINGLETON))
   {
     if (model_singletons == NULL)
@@ -104,7 +104,7 @@ static void enforce_singleton_instances(model_t* model)
     if (string_unordered_set_contains(model_singletons, model->name))
       polymec_error("Model %s is a singleton: only 1 instance can exist in memory.", model->name);
 
-    // NOTE: the model itself outlives its entry in the list of singletons, 
+    // NOTE: the model itself outlives its entry in the list of singletons,
     // NOTE: so we don't need to insert a copy of the name.
     string_unordered_set_insert(model_singletons, model->name);
   }
@@ -112,7 +112,7 @@ static void enforce_singleton_instances(model_t* model)
 
 static void enforce_mpi_parallelism(model_t* model)
 {
-  if ((model->parallelism == MODEL_SERIAL) || 
+  if ((model->parallelism == MODEL_SERIAL) ||
       (model->parallelism == MODEL_SERIAL_SINGLETON))
   {
     int nprocs;
@@ -137,9 +137,9 @@ static void check_thread_safety(model_t* model)
   }
 }
 
-model_t* model_new(const char* name, 
-                   void* context, 
-                   model_vtable vtable, 
+model_t* model_new(const char* name,
+                   void* context,
+                   model_vtable vtable,
                    model_parallelism_t parallelism)
 {
   if (_mpi_rank == -1)
@@ -162,8 +162,8 @@ model_t* model_new(const char* name,
   model->max_dt = REAL_MAX;
   model->min_dt = 0.0;
   model->diag_mode = MODEL_DIAG_NEAREST_STEP;
- 
-  // By default, we make model steps uninterruptible by intercepting 
+
+  // By default, we make model steps uninterruptible by intercepting
   // SIGINT and SIGTERM.
   model->handle_signals = true;
 
@@ -195,9 +195,9 @@ model_t* model_new(const char* name,
 
 void model_free(model_t* model)
 {
-  // If the model is a singleton, we remove its instance from 
+  // If the model is a singleton, we remove its instance from
   // our set of running singletons.
-  if ((model->parallelism == MODEL_SERIAL_SINGLETON) || 
+  if ((model->parallelism == MODEL_SERIAL_SINGLETON) ||
       (model->parallelism == MODEL_MPI_SINGLETON))
   {
     string_unordered_set_delete(model_singletons, model->name);
@@ -241,12 +241,12 @@ void model_handle_signals(model_t* model, bool flag)
 
 extern void probe_set_model(probe_t* probe, model_t* model);
 
-void model_add_probe(model_t* model, 
+void model_add_probe(model_t* model,
                      probe_t* probe,
                      real_t* acq_times,
                      size_t num_acq_times)
 {
-  log_debug("%s: Adding probe %s (measures %s)", model->name, 
+  log_debug("%s: Adding probe %s (measures %s)", model->name,
             probe_name(probe), probe_data_name(probe));
   real_array_t* times = real_array_new();
   real_array_resize(times, num_acq_times);
@@ -272,12 +272,12 @@ static void model_do_periodic_work(model_t* model)
   }
 
   // Save if the step # is right and if we're not on a freshly-loaded step.
-  if ((model->save_every > 0) && 
+  if ((model->save_every > 0) &&
       ((model->step % model->save_every) == 0) &&
       (model->load_step != model->step))
     model_save(model);
 
-  // Now acquire any data we need to, given that the time step makes 
+  // Now acquire any data we need to, given that the time step makes
   // allowances for acquisitions.
   model_acquire(model);
 }
@@ -326,7 +326,7 @@ static real_t model_next_acq_time(model_t* model)
       real_t t = acq_times->data[acq_time_index];
       real_t dt = t - model->time;
       ASSERT(dt >= 0.0);
-      if (dt < 1e-12) 
+      if (dt < 1e-12)
       {
         // We're already at one observation time; set our sights on the next.
         if (acq_time_index < (acq_times->size - 1))
@@ -335,7 +335,7 @@ static real_t model_next_acq_time(model_t* model)
           dt = t - model->time;
         }
       }
-      else 
+      else
         acq_time = MIN(acq_time, t);
     }
   }
@@ -343,20 +343,21 @@ static real_t model_next_acq_time(model_t* model)
   return acq_time;
 }
 
-real_t model_max_dt(model_t* model, char* reason)
+real_t model_max_dt(model_t* model, char** reason)
 {
+  static char _reason[1025];
   real_t dt = REAL_MAX;
-  strcpy(reason, "No time step constraints.");
+  strncpy(_reason, "No time step constraints.", 1024);
 
   // First let the model have at it.
   if (model->vtable.max_dt != NULL)
   {
-    char model_reason[POLYMEC_MODEL_MAXDT_REASON_SIZE];
+    char model_reason[1025];
     real_t model_dt = model->vtable.max_dt(model->context, model->time, model_reason);
     if (model_dt < dt)
     {
       dt = model_dt;
-      strcpy(reason, model_reason);
+      strncpy(_reason, model_reason, 1024);
     }
   }
 
@@ -364,24 +365,24 @@ real_t model_max_dt(model_t* model, char* reason)
   if (model->max_dt < dt)
   {
     dt = model->max_dt;
-    strcpy(reason, "Specified maximum timestep.");
+    strncpy(_reason, "Specified maximum timestep.", 1024);
   }
 
   // The following constraints only apply if we are collecting diagnostics
   // at exact times.
   if (model->diag_mode == MODEL_DIAG_EXACT_TIME)
   {
-    // If we have an observation time coming up, perhaps the next one will 
+    // If we have an observation time coming up, perhaps the next one will
     // constrain the timestep.
     real_t acq_time = model_next_acq_time(model);
     real_t acq_dt = acq_time - model->time;
     if (acq_dt < dt)
     {
       dt = acq_dt;
-      sprintf(reason, "Requested acquisition time: %g", acq_time);
+      snprintf(_reason, 1024, "Requested acquisition time: %g", acq_time);
     }
 
-    // If we have a plot time coming up, perhaps the next one will 
+    // If we have a plot time coming up, perhaps the next one will
     // constrain the timestep.
     if (model->plot_every > 0.0)
     {
@@ -389,7 +390,7 @@ real_t model_max_dt(model_t* model, char* reason)
       real_t plot_time = (n+1) * model->plot_every;
       real_t plot_dt = plot_time - model->time;
       ASSERT(plot_dt >= 0.0);
-      if (plot_dt < 1e-12) 
+      if (plot_dt < 1e-12)
       {
         // We're already at one plot time; set our sights on the next.
         plot_dt = model->plot_every;
@@ -400,13 +401,13 @@ real_t model_max_dt(model_t* model, char* reason)
       {
         dt = plot_dt;
         model->plot_this_step = true;
-        sprintf(reason, "Requested plot time: %g", plot_time);
+        snprintf(_reason, 1024, "Requested plot time: %g", plot_time);
       }
       else if (2.0 * plot_dt < dt)
       {
         dt = plot_dt;
         model->plot_this_step = true;
-        sprintf(reason, "Requested plot time: %g", plot_time);
+        snprintf(_reason, 1024, "Requested plot time: %g", plot_time);
       }
       else if (reals_nearly_equal(plot_dt, dt, 1e-12)) // FIXME: corny
         model->plot_this_step = true;
@@ -414,7 +415,7 @@ real_t model_max_dt(model_t* model, char* reason)
   }
   else
   {
-    // We still need to create plots, even if we're not stopping exactly 
+    // We still need to create plots, even if we're not stopping exactly
     // at the right time.
     if (model->plot_every > 0.0)
     {
@@ -425,6 +426,9 @@ real_t model_max_dt(model_t* model, char* reason)
         model->plot_this_step = true;
     }
   }
+
+  if (reason != NULL)
+    *reason = _reason;
 
   return dt;
 }
@@ -459,7 +463,7 @@ real_t model_advance(model_t* model, real_t max_dt)
     prev_sigint_handler = signal(SIGINT, handle_sigint_or_sigterm);
     prev_sigterm_handler = signal(SIGTERM, handle_sigint_or_sigterm);
   }
-  else 
+  else
   {
     // If we've received a SIGINT, exit immediately.
     if (_received_signal)
@@ -612,7 +616,7 @@ void model_acquire(model_t* model)
   {
     // Figure out whether to actually acquire the data now.
     bool acquire_now = false;
-    size_t acq_time_index = real_lower_bound(acq_times->data, acq_times->size, 
+    size_t acq_time_index = real_lower_bound(acq_times->data, acq_times->size,
                                              model->time);
     if ((acq_time_index < acq_times->size) &&
          reals_nearly_equal(model->time, acq_times->data[acq_time_index], 1e-12)) // FIXME: Good enough?
@@ -620,7 +624,7 @@ void model_acquire(model_t* model)
     else if (model->diag_mode == MODEL_DIAG_NEAREST_STEP)
     {
       real_t last_dt = model->dt;
-      size_t last_acq_time_index = real_lower_bound(acq_times->data, acq_times->size, 
+      size_t last_acq_time_index = real_lower_bound(acq_times->data, acq_times->size,
                                                     model->time - last_dt);
       if (last_acq_time_index < acq_time_index)
         acquire_now = true;
@@ -641,8 +645,8 @@ void model_acquire(model_t* model)
         if (array_p == NULL)
         {
           array = probe_data_array_new();
-          probe_data_map_insert_with_kv_dtors(model->probe_data, 
-                                              string_dup(data_name), array, 
+          probe_data_map_insert_with_kv_dtors(model->probe_data,
+                                              string_dup(data_name), array,
                                               string_free, probe_data_array_free);
         }
         else
@@ -720,11 +724,14 @@ void model_run(model_t* model, real_t t1, real_t t2, int max_steps)
     // Now run the calculation.
     while ((model->time < t2) && (model->step < max_steps) && (_received_signal == 0))
     {
-      // Let the model tell us the maximum time step it can take.
-      char reason[POLYMEC_MODEL_MAXDT_REASON_SIZE+1];
-      real_t max_dt = model_max_dt(model, reason);
+      char reason[1025];
 
-      // Have we fallen below the minimum allowable time step? If so, 
+      // Let the model tell us the maximum time step it can take.
+      char* model_reason;
+      real_t max_dt = model_max_dt(model, &model_reason);
+      strncpy(reason, model_reason, 1024);
+
+      // Have we fallen below the minimum allowable time step? If so,
       // we end the simulation.
       if (max_dt < model->min_dt)
       {
@@ -734,33 +741,33 @@ void model_run(model_t* model, real_t t1, real_t t2, int max_steps)
         break;
       }
 
-      // If it's the first step, apply the initial time step size as a 
+      // If it's the first step, apply the initial time step size as a
       // constraint.
       if (model->step == 0)
       {
         if (model->initial_dt < max_dt)
         {
           max_dt = model->initial_dt;
-          snprintf(reason, POLYMEC_MODEL_MAXDT_REASON_SIZE, "Initial time step size");
+          snprintf(reason, 1024, "Initial time step size");
         }
       }
 
-      // If we are approaching the end of the simulation, we need to apply 
+      // If we are approaching the end of the simulation, we need to apply
       // the end time as a constraint.
       real_t remaining_time = t2 - model->time;
       if (max_dt > remaining_time)
       {
         max_dt = remaining_time;
-        snprintf(reason, POLYMEC_MODEL_MAXDT_REASON_SIZE, "End of simulation");
+        snprintf(reason, 1024, "End of simulation");
       }
-      // If we are not quite there but we are close enough to encounter the 
+
+      // If we are not quite there but we are close enough to encounter the
       // minimum time step, break the final 2 steps into more equally-spaced
       // sizes.
       else if ((max_dt + model->min_dt) > 2.0 * remaining_time)
       {
         max_dt = 0.5 * remaining_time;
-        snprintf(reason, POLYMEC_MODEL_MAXDT_REASON_SIZE, 
-                 "End of simulation (subject to min_dt).");
+        snprintf(reason, 1024, "End of simulation (subject to min_dt).");
       }
 
       log_detail("%s: Max time step max_dt = %g\n (Reason: %s)", model->name, max_dt, reason);
@@ -794,9 +801,9 @@ void* model_context(model_t* model)
   return model->context;
 }
 
-bool model_next_probe_data(model_t* model, 
-                           int* pos, 
-                           char** quantity, 
+bool model_next_probe_data(model_t* model,
+                           int* pos,
+                           char** quantity,
                            probe_data_array_t** data)
 {
   return probe_data_map_next(model->probe_data, pos, quantity, data);

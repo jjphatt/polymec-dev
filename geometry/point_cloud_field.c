@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -57,6 +57,6 @@ field_metadata_t* point_cloud_field_metadata(point_cloud_field_t* field)
 real_enumerable_generator_t* point_cloud_field_enumerate(point_cloud_field_t* field)
 {
   size_t num_values = field->num_components * field->capacity;
-  return real_enumerable_generator_from_array(field->data, num_values, NULL);
+  return real_enumerable_generator_from_array(field->data, num_values, false);
 }
 

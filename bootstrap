@@ -12,7 +12,7 @@ fi
 # Create the build directory if it doesn't exist.
 if [ ! -d $1 ]; then
   mkdir -p $1
-fi 
+fi
 
 # Copy our template config script into place.
 echo "SOURCE_DIR=$PWD" > $1/config.sh
@@ -20,7 +20,7 @@ cat <<EOT >> $1/config.sh
 # ^^^^^^ location of polymec source code.
 
 # config.sh -- A CMake configuration script.
-# Edit this file to change the parameters in your build. Uncomment exactly one 
+# Edit this file to change the parameters in your build. Uncomment exactly one
 # value for each parameter.
 
 #-----------------------------------------------------------------------------
@@ -33,10 +33,10 @@ PREFIX=\$HOME/opt
 #-----------------------------------------------------------------------------
 
 # Build with MPI for parallel simulations.
-#MPI=ON 
+#MPI=ON
 
 #-----------------------------------------------------------------------------
-#                                  OPENMP                 
+#                                  OPENMP
 #-----------------------------------------------------------------------------
 
 # Enable OpenMP threading.
@@ -92,20 +92,35 @@ GENERATOR="Unix Makefiles"
 # Code::Blocks (with UNIX makefiles underneath).
 #GENERATOR="CodeBlocks - Unix Makefiles"
 
-# XCode (shudder).
-#GENERATOR="XCode"
+# Code::Blocks (with Ninja underneath).
+#GENERATOR="CodeBlocks - Ninja"
+
+# Xcode. You can't use this for parallel (MPI) builds.
+#GENERATOR="Xcode"
 
 # CodeLite (with UNIX makefiles underneath).
 #GENERATOR="CodeLite - Unix Makefiles"
 
+# CodeLite (with Ninja underneath).
+#GENERATOR="CodeLite - Ninja"
+
 # Eclipse CDT4 (with UNIX makefiles underneath).
 #GENERATOR="Eclipse CDT4 - Unix Makefiles"
 
-# Kate
-#GENERATOR="Kate"
+# Eclipse CDT4 (with Ninja underneath).
+#GENERATOR="Eclipse CDT4 - Ninja"
+
+# Kate (with UNIX makefiles underneath).
+#GENERATOR="Kate - Unix Makefiles"
+
+# Kate (with Ninja underneath).
+#GENERATOR="Kate - Ninja"
 
 # Sublime Text 2 (with UNIX makefiles underneath).
 #GENERATOR="Sublime Text 2 - Unix Makefiles"
+
+# Sublime Text 2 (with Ninja underneath).
+#GENERATOR="Sublime Text 2 - Ninja"
 
 #-----------------------------------------------------------------------------
 #                               Verbose builds
@@ -141,11 +156,9 @@ GENERATOR="Unix Makefiles"
 if [ "\$MPI" = "ON" ]; then
   CC=mpicc
   CXX=mpic++
-  FC=mpif90
 else
   CC=cc
   CXX=c++
-  FC=gfortran
 fi
 
 # Override compilers here (ONLY if you know what you're doing!).
@@ -155,9 +168,6 @@ fi
 
 # C++ compiler.
 #CXX=c++
-
-# Fortran compiler.
-#FC=gfortran
 
 #-----------------------------------------------------------------------------
 #                   Don't change anything below here.
@@ -189,12 +199,15 @@ if [ ! "\$MACHINE" = "" ]; then
   OPTIONS="\$OPTIONS -DPOLYMEC_MACHINE=\$MACHINE"
 fi
 
+# Clear the build cache.
+rm -f CMakeCache.txt
+
+# Configure the build.
 cmake \
  -DCMAKE_INSTALL_PREFIX:PATH=\$PREFIX \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
- -DCMAKE_Fortran_COMPILER=\$FC \
  -DPOLYMEC_PRECISION=\$PRECISION \
  \$OPTIONS \
  -G "\$GENERATOR" \

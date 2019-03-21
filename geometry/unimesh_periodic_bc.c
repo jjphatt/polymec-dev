@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,18 +9,19 @@
 #include "geometry/unimesh_patch.h"
 #include "geometry/unimesh_patch_bc.h"
 
-extern void* unimesh_patch_boundary_buffer(unimesh_t* mesh, 
-                                           int i, int j, int k, 
+extern void* unimesh_patch_boundary_buffer(unimesh_t* mesh,
+                                           int i, int j, int k,
                                            unimesh_boundary_t boundary);
 
 static void start_update_cell_x1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   ASSERT(i == 0);
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, npx-1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, npx-1, j, k,
                                                UNIMESH_X2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -32,12 +33,13 @@ static void start_update_cell_x1(void* context, unimesh_t* mesh,
 
 static void start_update_cell_x2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(i == npx-1);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -49,12 +51,13 @@ static void start_update_cell_x2(void* context, unimesh_t* mesh,
 
 static void start_update_cell_y1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   ASSERT(j == 0);
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, npy-1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, npy-1, k,
                                                UNIMESH_Y2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -66,12 +69,13 @@ static void start_update_cell_y1(void* context, unimesh_t* mesh,
 
 static void start_update_cell_y2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(j == npy-1);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -83,12 +87,13 @@ static void start_update_cell_y2(void* context, unimesh_t* mesh,
 
 static void start_update_cell_z1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   ASSERT(k == 0);
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, npz-1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, npz-1,
                                                UNIMESH_Z2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->ny+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -100,12 +105,13 @@ static void start_update_cell_z1(void* context, unimesh_t* mesh,
 
 static void start_update_cell_z2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(k == npz-1);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->ny+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -117,23 +123,25 @@ static void start_update_cell_z2(void* context, unimesh_t* mesh,
 
 static void start_update_xface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   ASSERT(i == 0);
 
-  // We only receive face values from our x2 neighbor, since it's the 
+  // We only receive face values from our x2 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_xface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(i == npx-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny, patch->nz, patch->nc);
   DECLARE_UNIMESH_XFACE_ARRAY(a, patch);
@@ -145,6 +153,7 @@ static void start_update_xface_x2(void* context, unimesh_t* mesh,
 
 static void start_update_xface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -152,6 +161,7 @@ static void start_update_xface_y1(void* context, unimesh_t* mesh,
 
 static void start_update_xface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -159,6 +169,7 @@ static void start_update_xface_y2(void* context, unimesh_t* mesh,
 
 static void start_update_xface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -166,6 +177,7 @@ static void start_update_xface_z1(void* context, unimesh_t* mesh,
 
 static void start_update_xface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -173,6 +185,7 @@ static void start_update_xface_z2(void* context, unimesh_t* mesh,
 
 static void start_update_yface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -180,6 +193,7 @@ static void start_update_yface_x1(void* context, unimesh_t* mesh,
 
 static void start_update_yface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -187,21 +201,23 @@ static void start_update_yface_x2(void* context, unimesh_t* mesh,
 
 static void start_update_yface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive face values from our y2 neighbor, since it's the 
+  // We only receive face values from our y2 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_yface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(j == npy-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->nz, patch->nc);
   DECLARE_UNIMESH_YFACE_ARRAY(a, patch);
@@ -213,6 +229,7 @@ static void start_update_yface_y2(void* context, unimesh_t* mesh,
 
 static void start_update_yface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -220,6 +237,7 @@ static void start_update_yface_z1(void* context, unimesh_t* mesh,
 
 static void start_update_yface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -227,6 +245,7 @@ static void start_update_yface_z2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -234,6 +253,7 @@ static void start_update_zface_x1(void* context, unimesh_t* mesh,
 
 static void start_update_zface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -241,6 +261,7 @@ static void start_update_zface_x2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -248,6 +269,7 @@ static void start_update_zface_y1(void* context, unimesh_t* mesh,
 
 static void start_update_zface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -255,21 +277,23 @@ static void start_update_zface_y2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive face values from our z1 neighbor, since it's the 
+  // We only receive face values from our z1 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_zface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(k == npz-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->ny, patch->nc);
   DECLARE_UNIMESH_ZFACE_ARRAY(a, patch);
@@ -281,6 +305,7 @@ static void start_update_zface_z2(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -288,6 +313,7 @@ static void start_update_xedge_x1(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -295,21 +321,23 @@ static void start_update_xedge_x2(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our y1 neighbor, since it's the 
+  // We only receive edge values from our y1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_xedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(j == npy-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_XEDGE_ARRAY(a, patch);
@@ -321,21 +349,23 @@ static void start_update_xedge_y2(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our z1 neighbor, since it's the 
+  // We only receive edge values from our z1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_xedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(k == npz-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->ny+1, patch->nc);
   DECLARE_UNIMESH_XEDGE_ARRAY(a, patch);
@@ -347,21 +377,23 @@ static void start_update_xedge_z2(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our x1 neighbor, since it's the 
+  // We only receive edge values from our x1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_yedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(i == npx-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_YEDGE_ARRAY(a, patch);
@@ -373,6 +405,7 @@ static void start_update_yedge_x2(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -380,6 +413,7 @@ static void start_update_yedge_y1(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -387,21 +421,23 @@ static void start_update_yedge_y2(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our z1 neighbor, since it's the 
+  // We only receive edge values from our z1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_yedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(k == npz-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->ny, patch->nc);
   DECLARE_UNIMESH_YEDGE_ARRAY(a, patch);
@@ -413,21 +449,23 @@ static void start_update_yedge_z2(void* context, unimesh_t* mesh,
 
 static void start_update_zedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our x1 neighbor, since it's the 
+  // We only receive edge values from our x1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_zedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(i == npx-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+1, patch->nz, patch->nc);
   DECLARE_UNIMESH_ZEDGE_ARRAY(a, patch);
@@ -439,21 +477,23 @@ static void start_update_zedge_x2(void* context, unimesh_t* mesh,
 
 static void start_update_zedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our y1 neighbor, since it's the 
+  // We only receive edge values from our y1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_zedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(j == npy-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->nz, patch->nc);
   DECLARE_UNIMESH_ZEDGE_ARRAY(a, patch);
@@ -465,6 +505,7 @@ static void start_update_zedge_y2(void* context, unimesh_t* mesh,
 
 static void start_update_zedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -472,6 +513,7 @@ static void start_update_zedge_z1(void* context, unimesh_t* mesh,
 
 static void start_update_zedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -479,21 +521,23 @@ static void start_update_zedge_z2(void* context, unimesh_t* mesh,
 
 static void start_update_node_x1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our x1 neighbor, since it's the 
+  // We only receive node values from our x1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_x2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
   unimesh_get_extents(mesh, &npx, &npy, &npz);
   ASSERT(i == npx-1);
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, 0, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+1, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_NODE_ARRAY(a, patch);
@@ -505,14 +549,16 @@ static void start_update_node_x2(void* context, unimesh_t* mesh,
 
 static void start_update_node_y1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our y1 neighbor, since it's the 
+  // We only receive node values from our y1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_y2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
@@ -525,7 +571,7 @@ static void start_update_node_y2(void* context, unimesh_t* mesh,
   int i1 = x_periodic ? 1 : 0;
   int i2 = x_periodic ? patch->nx : patch->nx+1;
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, 0, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_NODE_ARRAY(a, patch);
@@ -537,14 +583,16 @@ static void start_update_node_y2(void* context, unimesh_t* mesh,
 
 static void start_update_node_z1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our z1 neighbor, since it's the 
+  // We only receive node values from our z1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_z2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
   int npx, npy, npz;
@@ -559,7 +607,7 @@ static void start_update_node_z2(void* context, unimesh_t* mesh,
   int j1 = (x_periodic || y_periodic) ? 1 : 0;
   int j2 = (x_periodic || y_periodic) ? patch->ny : patch->ny+1;
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, 0,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->ny+1, patch->nc);
   DECLARE_UNIMESH_NODE_ARRAY(a, patch);
@@ -571,10 +619,11 @@ static void start_update_node_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   ASSERT(i == 0);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -586,9 +635,10 @@ static void finish_update_cell_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -600,10 +650,11 @@ static void finish_update_cell_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   ASSERT(j == 0);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -615,9 +666,10 @@ static void finish_update_cell_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->nz+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -629,10 +681,11 @@ static void finish_update_cell_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   ASSERT(k == 0);
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->ny+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -644,9 +697,10 @@ static void finish_update_cell_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_cell_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z2_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+2, patch->ny+2, patch->nc);
   DECLARE_UNIMESH_CELL_ARRAY(a, patch);
@@ -658,9 +712,10 @@ static void finish_update_cell_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny, patch->nz, patch->nc);
   DECLARE_UNIMESH_XFACE_ARRAY(a, patch);
@@ -672,6 +727,7 @@ static void finish_update_xface_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x1 boundary.
@@ -679,6 +735,7 @@ static void finish_update_xface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -686,6 +743,7 @@ static void finish_update_xface_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -693,6 +751,7 @@ static void finish_update_xface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -700,6 +759,7 @@ static void finish_update_xface_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -707,6 +767,7 @@ static void finish_update_xface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -714,6 +775,7 @@ static void finish_update_yface_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -721,9 +783,10 @@ static void finish_update_yface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->nz, patch->nc);
   DECLARE_UNIMESH_YFACE_ARRAY(a, patch);
@@ -735,6 +798,7 @@ static void finish_update_yface_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 boundary.
@@ -742,6 +806,7 @@ static void finish_update_yface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -749,6 +814,7 @@ static void finish_update_yface_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -756,6 +822,7 @@ static void finish_update_yface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -763,6 +830,7 @@ static void finish_update_zface_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -770,6 +838,7 @@ static void finish_update_zface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -777,6 +846,7 @@ static void finish_update_zface_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -784,9 +854,10 @@ static void finish_update_zface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->ny, patch->nc);
   DECLARE_UNIMESH_ZFACE_ARRAY(a, patch);
@@ -798,6 +869,7 @@ static void finish_update_zface_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -805,6 +877,7 @@ static void finish_update_zface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -812,6 +885,7 @@ static void finish_update_xedge_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -819,9 +893,10 @@ static void finish_update_xedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_XEDGE_ARRAY(a, patch);
@@ -833,6 +908,7 @@ static void finish_update_xedge_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -840,9 +916,10 @@ static void finish_update_xedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx, patch->ny+1, patch->nc);
   DECLARE_UNIMESH_XEDGE_ARRAY(a, patch);
@@ -854,6 +931,7 @@ static void finish_update_xedge_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -861,9 +939,10 @@ static void finish_update_xedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_YEDGE_ARRAY(a, patch);
@@ -875,6 +954,7 @@ static void finish_update_yedge_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 neighbor.
@@ -882,6 +962,7 @@ static void finish_update_yedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -889,6 +970,7 @@ static void finish_update_yedge_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -896,9 +978,10 @@ static void finish_update_yedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->ny, patch->nc);
   DECLARE_UNIMESH_YEDGE_ARRAY(a, patch);
@@ -910,6 +993,7 @@ static void finish_update_yedge_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -917,9 +1001,10 @@ static void finish_update_yedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+1, patch->nz, patch->nc);
   DECLARE_UNIMESH_ZEDGE_ARRAY(a, patch);
@@ -931,6 +1016,7 @@ static void finish_update_zedge_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 neighbor.
@@ -938,9 +1024,10 @@ static void finish_update_zedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->nz, patch->nc);
   DECLARE_UNIMESH_ZEDGE_ARRAY(a, patch);
@@ -952,6 +1039,7 @@ static void finish_update_zedge_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -959,6 +1047,7 @@ static void finish_update_zedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -966,6 +1055,7 @@ static void finish_update_zedge_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -973,9 +1063,10 @@ static void finish_update_zedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->ny+1, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_NODE_ARRAY(a, patch);
@@ -987,6 +1078,7 @@ static void finish_update_node_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_node_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 neighbor.
@@ -994,6 +1086,7 @@ static void finish_update_node_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // Figure out x and z bounds.
@@ -1002,7 +1095,7 @@ static void finish_update_node_y1(void* context, unimesh_t* mesh,
   int i1 = x_periodic ? 1 : 0;
   int i2 = x_periodic ? patch->nx : patch->nx+1;
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->nz+1, patch->nc);
   DECLARE_UNIMESH_NODE_ARRAY(a, patch);
@@ -1014,6 +1107,7 @@ static void finish_update_node_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_node_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -1021,6 +1115,7 @@ static void finish_update_node_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // Figure out x and y bounds.
@@ -1031,7 +1126,7 @@ static void finish_update_node_z1(void* context, unimesh_t* mesh,
   int j1 = (x_periodic || y_periodic) ? 1 : 0;
   int j2 = (x_periodic || y_periodic) ? patch->ny : patch->ny+1;
 
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
 
   DECLARE_3D_ARRAY(real_t, buf, buffer, patch->nx+1, patch->ny+1, patch->nc);
@@ -1044,6 +1139,7 @@ static void finish_update_node_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_node_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.

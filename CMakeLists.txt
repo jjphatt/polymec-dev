@@ -51,11 +51,11 @@ message(STATUS "Real number representation is ${POLYMEC_REAL_TYPE}")
 
 # Report shared library status.
 if (BUILD_SHARED_LIBS)
-  message(STATUS "Building shared libraries with dynamic loading enabled.")
+  message(STATUS "Building shared libraries.")
   set(HAVE_SHARED_LIBS 1)
 else()
   set(HAVE_SHARED_LIBS 0)
-  message(STATUS "Building static libraries with dynamic loading disabled.")
+  message(STATUS "Building static libraries.")
 endif()
 
 # Add a custom target (always out of date) that generates polymec_version.h.
@@ -63,7 +63,7 @@ add_custom_target(update_version_h ALL
                   ${BASH} ${PROJECT_SOURCE_DIR}/tools/update_version_h.sh ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}/core/polymec_version.h
                   BYPRODUCTS ${PROJECT_BINARY_DIR}/core/polymec_version.h)
 set_target_properties(update_version_h PROPERTIES FOLDER Misc)
-                  
+
 # Figure out the system type.
 if (APPLE)
   set(SYS_FLAGS "-DAPPLE=1")
@@ -97,8 +97,8 @@ else ()
       set(NUMBER_OF_CORES 1)
     endif()
 
-    # Physical cores: tricky in general. We'll parse the lscpu command to 
-    # find out the number of threads per core and then just divide 
+    # Physical cores: tricky in general. We'll parse the lscpu command to
+    # find out the number of threads per core and then just divide
     # NUMBER_OF_CORES by that to get NUMBER_OF_PHYSICAL_CORES.
     execute_process(COMMAND lscpu OUTPUT_VARIABLE lscpu_output)
     string(FIND ${lscpu_output} "Thread(s) per core:" pos)
@@ -106,7 +106,7 @@ else ()
     string(FIND ${lscpu_output} "\n" pos)
     string(SUBSTRING ${lscpu_output} 0 ${pos} lscpu_output) # chop the back
     string(REPLACE "Thread(s) per core: " "" lscpu_output ${lscpu_output})
-    string(REPLACE " " "" THREADS_PER_CORE ${lscpu_output}) 
+    string(REPLACE " " "" THREADS_PER_CORE ${lscpu_output})
     math(EXPR NUMBER_OF_PHYSICAL_CORES "${NUMBER_OF_CORES} / ${THREADS_PER_CORE}")
 
     message(STATUS "Configuring on Linux with ${NUMBER_OF_CORES} logical (${NUMBER_OF_PHYSICAL_CORES} physical) cores.")
@@ -149,7 +149,7 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-double-promotion -Wno-conversion")
   endif()
 
-  # Clang proper behaves differently from Apple Clang, and requires 
+  # Clang proper behaves differently from Apple Clang, and requires
   # more suppressions.
   if (NOT CMAKE_C_COMPILER_ID MATCHES "AppleClang")
     # tolower() is a recursive macro, which causes issues.
@@ -174,7 +174,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SYS_FLAGS}")
 
 # If the lld or gold linkers are available, use them (in that order).
 find_program(LLD lld)
-if (NOT LLD STREQUAL "LLD-NOTFOUND")
+if (LLD STREQUAL "LLD-NOTFOUND")
   find_program(GOLD gold)
   if (NOT GOLD STREQUAL "GOLD-NOTFOUND")
     message(STATUS "Found gold linker. Using instead of ld.")
@@ -200,7 +200,7 @@ if (BUILD_SHARED_LIBS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
   endif()
 
-  # Here we make sure CMake-installed binaries use the correct runpath, and 
+  # Here we make sure CMake-installed binaries use the correct runpath, and
   # that the path is not stripped during installation.
   set(CMAKE_MACOSX_RPATH TRUE)
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -240,7 +240,7 @@ if (COVERAGE)
 
   add_custom_target(coverage ${LCOV} --gcov-tool=${GCOV} --directory ${PROJECT_BINARY_DIR} -c -q -o lcov.info
                     COMMAND ${LCOV} --remove lcov.info '*valgrind.h' '*/tests/*' -o lcov.info
-                    COMMAND ${GENHTML} -o coverage lcov.info 
+                    COMMAND ${GENHTML} -o coverage lcov.info
                     COMMENT "Writing code coverage report to ${PROJECT_BINARY_DIR}/coverage.")
 endif()
 
@@ -277,7 +277,7 @@ if (HAVE_MPI)
   message(STATUS "MPI is enabled.")
   set(HAVE_MPI 1) # Normalize.
 
-  # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone. 
+  # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
   set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
 else()
@@ -310,7 +310,7 @@ endif()
 # Other third-party libraries.
 add_subdirectory(3rdparty)
 
-# Record the libraries we've gathered so far as the "base" libraries that 
+# Record the libraries we've gathered so far as the "base" libraries that
 # Polymec needs. We use this for efficiently linking unit tests.
 set(POLYMEC_BASE_LIBRARIES ${POLYMEC_LIBRARIES})
 
@@ -356,8 +356,8 @@ add_subdirectory(io)
 add_custom_target(generate_headers ALL
                   ${BASH} ${PROJECT_SOURCE_DIR}/tools/generate_headers.sh ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}/include core geometry solvers model io)
 set_target_properties(generate_headers PROPERTIES FOLDER Misc)
-                  
-# Now that we have gathered all our libraries, generate a polymec.cmake 
+
+# Now that we have gathered all our libraries, generate a polymec.cmake
 # file that contains all the vital information.
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates/polymec.cmake.in"
@@ -409,19 +409,20 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindValgrind.cmake DESTI
 
 # Additional targets.
 
-find_program(PYTHON python)
-if (NOT PYTHON STREQUAL "PYTHON-NOTFOUND")
+find_package(Python COMPONENTS Interpreter)
+if (Python_FOUND AND Python_VERSION_MAJOR EQUAL 3)
+  message(STATUS "Found Python. Generating 'stats', 'prepend-license' targets.")
   # make stats
-  add_custom_target(stats ${PYTHON} ${PROJECT_SOURCE_DIR}/tools/gather_stats.py ${PROJECT_SOURCE_DIR})
+  add_custom_target(stats ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/gather_stats.py ${PROJECT_SOURCE_DIR})
   # make prepend-license
-  add_custom_target(prepend-license ${PYTHON} ${PROJECT_SOURCE_DIR}/tools/prepend_license.py ${PROJECT_SOURCE_DIR})
+  add_custom_target(prepend-license ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/prepend_license.py ${PROJECT_SOURCE_DIR})
 endif()
 
 # Documentation.
 
-find_package(Doxygen
-             OPTIONAL_COMPONENTS dot)
+find_package(Doxygen OPTIONAL_COMPONENTS dot QUIET)
 if (DOXYGEN_FOUND)
+  message(STATUS "Found Doxygen. Generating 'doc' target.")
   set(DOXYGEN_EXTRACT_LOCAL_CLASSES NO)
   set(DOXYGEN_FILE_PATTERNS "*.h")
   set(DOXYGEN_GENERATE_HTML YES)
@@ -439,9 +440,10 @@ if (DOXYGEN_FOUND)
   set(DOXYGEN_SHOW_FILES NO)
   set(DOXYGEN_SHOW_NAMESPACES NO)
   set(DOXYGEN_CALL_GRAPH YES)
-  set(DOXYGEN_ALIASES 
+  set(DOXYGEN_ALIASES
       [[collective="\xrefitem collective \"Collective functions\" \"Collective (MPI) functions\""]]
       [[refcounted="\xrefitem refcounted \"Reference counted resources\" \"Reference counted resources\""]]
+      [[experimental="\xrefitem experimental \"Experimental code: not extensively tested!\" \"Experimental code: not extensively tested!\""]]
      )
   set(DOXYGEN_VERBATIM_VARS DOXYGEN_ALIASES)
   doxygen_add_docs(doc ${PROJECT_BINARY_DIR}/core/polymec.h;core;geometry;solvers;model;io

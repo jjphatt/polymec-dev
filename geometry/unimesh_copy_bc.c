@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,91 +9,100 @@
 #include "geometry/unimesh_patch.h"
 #include "geometry/unimesh_patch_bc.h"
 
-extern void unimesh_patch_copy_bvalues_to_buffer(unimesh_patch_t* patch, 
-                                                 unimesh_boundary_t boundary, 
+extern void unimesh_patch_copy_bvalues_to_buffer(unimesh_patch_t* patch,
+                                                 unimesh_boundary_t boundary,
                                                  void* buffer);
 
-extern void unimesh_patch_copy_bvalues_from_buffer(unimesh_patch_t* patch, 
-                                                   unimesh_boundary_t boundary, 
+extern void unimesh_patch_copy_bvalues_from_buffer(unimesh_patch_t* patch,
+                                                   unimesh_boundary_t boundary,
                                                    void* buffer);
 
 extern void* unimesh_patch_boundary_buffer(unimesh_t* mesh,
-                                           int i, int j, int k, 
+                                           int i, int j, int k,
                                            unimesh_boundary_t boundary);
 
 static void start_update_cell_x1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i-1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i-1, j, k,
                                                UNIMESH_X2_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void start_update_cell_x2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void start_update_cell_y1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j-1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j-1, k,
                                                UNIMESH_Y2_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void start_update_cell_y2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void start_update_cell_z1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k-1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k-1,
                                                UNIMESH_Z2_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void start_update_cell_z2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void start_update_xface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive face values from our x1 neighbor, since it's the 
+  // We only receive face values from our x1 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_xface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void start_update_xface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -101,6 +110,7 @@ static void start_update_xface_y1(void* context, unimesh_t* mesh,
 
 static void start_update_xface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -108,6 +118,7 @@ static void start_update_xface_y2(void* context, unimesh_t* mesh,
 
 static void start_update_xface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -115,6 +126,7 @@ static void start_update_xface_z1(void* context, unimesh_t* mesh,
 
 static void start_update_xface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -122,6 +134,7 @@ static void start_update_xface_z2(void* context, unimesh_t* mesh,
 
 static void start_update_yface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -129,6 +142,7 @@ static void start_update_yface_x1(void* context, unimesh_t* mesh,
 
 static void start_update_yface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -136,23 +150,26 @@ static void start_update_yface_x2(void* context, unimesh_t* mesh,
 
 static void start_update_yface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive face values from our y1 neighbor, since it's the 
+  // We only receive face values from our y1 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_yface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void start_update_yface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -160,6 +177,7 @@ static void start_update_yface_z1(void* context, unimesh_t* mesh,
 
 static void start_update_yface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -167,6 +185,7 @@ static void start_update_yface_z2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -174,6 +193,7 @@ static void start_update_zface_x1(void* context, unimesh_t* mesh,
 
 static void start_update_zface_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -181,6 +201,7 @@ static void start_update_zface_x2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -188,6 +209,7 @@ static void start_update_zface_y1(void* context, unimesh_t* mesh,
 
 static void start_update_zface_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -195,23 +217,26 @@ static void start_update_zface_y2(void* context, unimesh_t* mesh,
 
 static void start_update_zface_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive face values from our z1 neighbor, since it's the 
+  // We only receive face values from our z1 neighbor, since it's the
   // owner of those faces, so no need to copy anything anywhere.
 }
 
 static void start_update_zface_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void start_update_xedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -219,6 +244,7 @@ static void start_update_xedge_x1(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -226,57 +252,64 @@ static void start_update_xedge_x2(void* context, unimesh_t* mesh,
 
 static void start_update_xedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our y1 neighbor, since it's the 
+  // We only receive edge values from our y1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_xedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void start_update_xedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our z1 neighbor, since it's the 
+  // We only receive edge values from our z1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_xedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void start_update_yedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our x1 neighbor, since it's the 
+  // We only receive edge values from our x1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_yedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void start_update_yedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -284,6 +317,7 @@ static void start_update_yedge_y1(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -291,57 +325,64 @@ static void start_update_yedge_y2(void* context, unimesh_t* mesh,
 
 static void start_update_yedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our z1 neighbor, since it's the 
+  // We only receive edge values from our z1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_yedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void start_update_zedge_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our x1 neighbor, since it's the 
+  // We only receive edge values from our x1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_zedge_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void start_update_zedge_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  // We only receive edge values from our y1 neighbor, since it's the 
+  // We only receive edge values from our y1 neighbor, since it's the
   // owner of those edges, so no need to copy anything anywhere.
 }
 
 static void start_update_zedge_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void start_update_zedge_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -349,6 +390,7 @@ static void start_update_zedge_z1(void* context, unimesh_t* mesh,
 
 static void start_update_zedge_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -356,120 +398,134 @@ static void start_update_zedge_z2(void* context, unimesh_t* mesh,
 
 static void start_update_node_x1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our x1 neighbor, since it's the 
+  // We only receive node values from our x1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_x2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i+1, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void start_update_node_y1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our y1 neighbor, since it's the 
+  // We only receive node values from our y1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_y2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j+1, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void start_update_node_z1(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  // We only receive node values from our z1 neighbor, since it's the 
+  // We only receive node values from our z1 neighbor, since it's the
   // owner of those nodes, so no need to copy anything anywhere.
 }
 
 static void start_update_node_z2(void* context, unimesh_t* mesh,
                                  int i, int j, int k, real_t t,
+                                 field_metadata_t* md,
                                  unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k+1,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_to_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X2_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X2_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y2_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y2_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void finish_update_cell_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z2_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z2_BOUNDARY, buffer);
 }
 
 static void finish_update_xface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void finish_update_xface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 boundary.
@@ -477,6 +533,7 @@ static void finish_update_xface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -484,6 +541,7 @@ static void finish_update_xface_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across y boundaries.
@@ -491,6 +549,7 @@ static void finish_update_xface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -498,6 +557,7 @@ static void finish_update_xface_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_xface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x faces don't get transmitted across z boundaries.
@@ -505,6 +565,7 @@ static void finish_update_xface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -512,6 +573,7 @@ static void finish_update_yface_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across x boundaries.
@@ -519,15 +581,17 @@ static void finish_update_yface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void finish_update_yface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 boundary.
@@ -535,6 +599,7 @@ static void finish_update_yface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -542,6 +607,7 @@ static void finish_update_yface_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_yface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y faces don't get transmitted across z boundaries.
@@ -549,6 +615,7 @@ static void finish_update_yface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -556,6 +623,7 @@ static void finish_update_zface_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across x boundaries.
@@ -563,6 +631,7 @@ static void finish_update_zface_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -570,6 +639,7 @@ static void finish_update_zface_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z faces don't get transmitted across y boundaries.
@@ -577,15 +647,17 @@ static void finish_update_zface_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_zface_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void finish_update_zface_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -593,6 +665,7 @@ static void finish_update_zface_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -600,6 +673,7 @@ static void finish_update_xedge_x1(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // x edges don't get transmitted across x boundaries.
@@ -607,15 +681,17 @@ static void finish_update_xedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void finish_update_xedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -623,15 +699,17 @@ static void finish_update_xedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_xedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void finish_update_xedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -639,15 +717,17 @@ static void finish_update_xedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void finish_update_yedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -655,6 +735,7 @@ static void finish_update_yedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -662,6 +743,7 @@ static void finish_update_yedge_y1(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // y edges don't get transmitted across y boundaries.
@@ -669,15 +751,17 @@ static void finish_update_yedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_yedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void finish_update_yedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.
@@ -685,15 +769,17 @@ static void finish_update_yedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_x1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void finish_update_zedge_x2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 neighbor.
@@ -701,15 +787,17 @@ static void finish_update_zedge_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_y1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void finish_update_zedge_y2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -717,6 +805,7 @@ static void finish_update_zedge_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_z1(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -724,6 +813,7 @@ static void finish_update_zedge_z1(void* context, unimesh_t* mesh,
 
 static void finish_update_zedge_z2(void* context, unimesh_t* mesh,
                                    int i, int j, int k, real_t t,
+                                   field_metadata_t* md,
                                    unimesh_patch_t* patch)
 {
   // z edges don't get transmitted across z boundaries.
@@ -731,15 +821,17 @@ static void finish_update_zedge_z2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_x1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_X1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_X1_BOUNDARY, buffer);
 }
 
 static void finish_update_node_x2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our x2 neighbor.
@@ -747,15 +839,17 @@ static void finish_update_node_x2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_y1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Y1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Y1_BOUNDARY, buffer);
 }
 
 static void finish_update_node_y2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our y2 neighbor.
@@ -763,15 +857,17 @@ static void finish_update_node_y2(void* context, unimesh_t* mesh,
 
 static void finish_update_node_z1(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
-  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k, 
+  void* buffer = unimesh_patch_boundary_buffer(mesh, i, j, k,
                                                UNIMESH_Z1_BOUNDARY);
   unimesh_patch_copy_bvalues_from_buffer(patch, UNIMESH_Z1_BOUNDARY, buffer);
 }
 
 static void finish_update_node_z2(void* context, unimesh_t* mesh,
                                   int i, int j, int k, real_t t,
+                                  field_metadata_t* md,
                                   unimesh_patch_t* patch)
 {
   // We don't receive anything from our z2 neighbor.

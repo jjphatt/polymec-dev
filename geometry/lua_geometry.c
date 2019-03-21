@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019, Jeffrey N. Johnson
 // All rights reserved.
-// 
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -13,13 +13,10 @@
 #include "geometry/union_sd_func.h"
 #include "geometry/intersection_sd_func.h"
 #include "geometry/difference_sd_func.h"
-
 #include "geometry/partition_polymesh.h"
 #include "geometry/create_uniform_polymesh.h"
-
 #include "geometry/create_quad_planar_polymesh.h"
 #include "geometry/create_hex_planar_polymesh.h"
-
 #include "geometry/colmesh.h"
 
 #include "lua.h"
@@ -69,7 +66,7 @@ static void cm_map_vector(void* context, point_t* x, vector_t* v, vector_t* w)
   *w = *(lua_to_vector(lo->L, -1));
 }
 
-static void cm_compute_jacobian(void* context, point_t* x, tensor2_t* J)
+static void cm_compute_jacobian(void* context, point_t* x, real_t J[3][3])
 {
   // Fetch our Lua table from the registry.
   lua_obj_t* lo = context;
@@ -84,33 +81,7 @@ static void cm_compute_jacobian(void* context, point_t* x, tensor2_t* J)
 
   if (!lua_is_tensor2(lo->L, -1))
     luaL_error(lo->L, "jacobian method did not return a tensor2.");
-  *J = *(lua_to_tensor2(lo->L, -1));
-}
-
-static coord_mapping_t* cm_compute_inverse(void* context)
-{
-  // Fetch our Lua table from the registry.
-  lua_obj_t* lo = context;
-  lua_pushlightuserdata(lo->L, lo);
-  lua_gettable(lo->L, LUA_REGISTRYINDEX);
-
-  // Call the inverse method. If inverse is the string "self", that means 
-  // we return the original object.
-  lua_getfield(lo->L, -1, "inverse");
-  if (lua_isstring(lo->L, -1) && (strcmp(lua_tostring(lo->L, -1), "self") == 0))
-    lua_pushvalue(lo->L, 1);
-  else
-  {
-    lua_pushvalue(lo->L, -2);
-    lua_call(lo->L, 1, 1);
-  }
-
-  if (!lua_is_coord_mapping(lo->L, -1))
-  {
-    luaL_error(lo->L, "inverse method did not return a coord_mapping.");
-    return NULL; 
-  }
-  return lua_to_coord_mapping(lo->L, -1);
+  memcpy(J, lua_to_tensor2(lo->L, -1), sizeof(real_t) * 9);
 }
 
 static void cm_dtor(void* context)
@@ -140,9 +111,9 @@ static int cm_new(lua_State* L)
     return luaL_error(L, "Name must be a string.");
   const char* name = lua_tostring(L, -1);
 
-  lua_getfield(L, 1, "map");
+  lua_getfield(L, 1, "map_point");
   if (!lua_isfunction(L, -1))
-    return luaL_error(L, "map must be a method.");
+    return luaL_error(L, "map_point must be a method.");
   lua_setfield(L, obj_index, "map_point");
   vtable.map_point = cm_map_point;
 
@@ -152,6 +123,8 @@ static int cm_new(lua_State* L)
     lua_setfield(L, obj_index, "map_vector");
     vtable.map_vector = cm_map_vector;
   }
+  else if (!lua_isnil(L, -1))
+    return luaL_error(L, "map_vector must be a method.");
 
   lua_getfield(L, 1, "jacobian");
   if (!lua_isfunction(L, -1))
@@ -159,18 +132,11 @@ static int cm_new(lua_State* L)
   lua_setfield(L, obj_index, "jacobian");
   vtable.jacobian = cm_compute_jacobian;
 
-  lua_getfield(L, 1, "inverse");
-  if (!lua_isfunction(L, -1) && 
-      !(lua_isstring(L, -1) && (strcmp(lua_tostring(L, -1), "self") == 0)))
-    return luaL_error(L, "inverse must be a method or the string 'self'.");
-  lua_setfield(L, obj_index, "inverse");
-  vtable.inverse = cm_compute_inverse;
-
   // Allocate a context pointer and stuff our object into the registry.
   lua_obj_t* lo = polymec_malloc(sizeof(lua_obj_t));
   lo->L = L;
 
-  // Store the table representing our object in the registry, with 
+  // Store the table representing our object in the registry, with
   // context as a key.
   lua_pushvalue(L, obj_index);
   lua_rawsetp(L, LUA_REGISTRYINDEX, lo);
@@ -196,8 +162,43 @@ static int cm_compose(lua_State* L)
 }
 
 static lua_module_function cm_funcs[] = {
-  {"new", cm_new, "coord_mapping.new{name = NAME, map = Xp, [map_vector = Xv], jacobian = J, inverse = Xinv} -> new coordinate mapping."},
+  {"new", cm_new, "coord_mapping.new{name = NAME, map = Xp, [map_vector = Xv], jacobian = J} -> new coordinate mapping."},
   {"compose", cm_compose, "coord_mapping.compose(X1, X2) ­> Returns a coordinate mapping for X1 o X2."},
+  {NULL, NULL, NULL}
+};
+
+static int cm_get_name(lua_State* L)
+{
+  coord_mapping_t* X = lua_to_coord_mapping(L, 1);
+  lua_pushstring(L, coord_mapping_name(X));
+  return 1;
+}
+
+static int cm_get_inverse(lua_State* L)
+{
+  coord_mapping_t* X = lua_to_coord_mapping(L, 1);
+  coord_mapping_t* Xinv = coord_mapping_inverse(X);
+  if (Xinv != NULL)
+    lua_push_coord_mapping(L, Xinv);
+  else
+    lua_pushnil(L);
+  return 1;
+}
+
+static int cm_set_inverse(lua_State* L)
+{
+  coord_mapping_t* X = lua_to_coord_mapping(L, 1);
+  coord_mapping_t* Xinv = lua_to_coord_mapping(L, 2);
+  if (Xinv == NULL)
+    luaL_error(L, "Argument must be a coord_mapping.");
+  coord_mapping_set_inverse(X, Xinv);
+  retain_ref(Xinv);
+  return 0;
+}
+
+static lua_class_field cm_fields[] = {
+  {"name", cm_get_name, NULL},
+  {"inverse", cm_get_inverse, cm_set_inverse},
   {NULL, NULL, NULL}
 };
 
@@ -210,11 +211,14 @@ static int cm_jacobian(lua_State* L)
     luaL_error(L, "Argument must be a point.");
 
   point_t* x = lua_to_point(L, 2);
-  tensor2_t* J = tensor2_new(0.0, 0.0, 0.0,
-                             0.0, 0.0, 0.0,
-                             0.0, 0.0, 0.0);
+  real_t J[3][3] = {{0.0, 0.0, 0.0},
+                    {0.0, 0.0, 0.0},
+                    {0.0, 0.0, 0.0}};
   coord_mapping_compute_jacobian(X, x, J);
-  lua_push_tensor2(L, J);
+  tensor2_t* J1 = tensor2_new(J[0][0], J[0][1], J[0][2],
+                              J[1][0], J[1][1], J[1][2],
+                              J[2][0], J[2][1], J[2][2]);
+  lua_push_tensor2(L, J1);
   return 1;
 }
 
@@ -232,19 +236,6 @@ static int cm_metric(lua_State* L)
                              0.0, 0.0, 0.0);
   coord_mapping_compute_metric(X, x, G);
   lua_push_tensor2(L, G);
-  return 1;
-}
-
-static int cm_inverse(lua_State* L)
-{
-  coord_mapping_t* X = lua_to_coord_mapping(L, 1);
-  if (X == NULL)
-    luaL_error(L, "Method must be invoked with a coord_mapping.");
-  coord_mapping_t* Xinv = coord_mapping_inverse(X);
-  if (Xinv != NULL)
-    lua_push_coord_mapping(L, Xinv);
-  else
-    lua_pushnil(L);
   return 1;
 }
 
@@ -288,7 +279,6 @@ static int cm_tostring(lua_State* L)
 
 static lua_class_method cm_methods[] = {
   {"jacobian", cm_jacobian, "X:jacobian(x) -> Returns the jacobian of X at the point x."},
-  {"inverse", cm_inverse, "X:inverse() -> Returns the inverse mapping of X."},
   {"metric", cm_metric, "X:metric(x) -> Returns the 3x3 metric tensor for X at the point x."},
   {"__call", cm_call, NULL},
   {"__tostring", cm_tostring, NULL},
@@ -374,7 +364,7 @@ static int sd_new(lua_State* L)
   lua_obj_t* lo = polymec_malloc(sizeof(lua_obj_t));
   lo->L = L;
 
-  // Store the table representing our object in the registry, with 
+  // Store the table representing our object in the registry, with
   // context as a key.
   lua_pushvalue(L, obj_index);
   lua_rawsetp(L, LUA_REGISTRYINDEX, lo);
@@ -452,7 +442,7 @@ static int sd_sphere(lua_State* L)
     orient = INWARD_NORMAL;
   else if (strcasecmp(orientation, "outward") == 0)
     orient = OUTWARD_NORMAL;
-  else 
+  else
     return luaL_error(L, "invalid orientation: %s (must be 'inward' or 'outward').", orientation);
 
   sd_func_t* f = sphere_sd_func_new(x, r, orient);
@@ -487,7 +477,7 @@ static int sd_cylinder(lua_State* L)
     orient = INWARD_NORMAL;
   else if (strcasecmp(orientation, "outward") == 0)
     orient = OUTWARD_NORMAL;
-  else 
+  else
     return luaL_error(L, "invalid orientation: %s (must be 'inward' or 'outward').", orientation);
 
   sd_func_t* f = cylinder_sd_func_new(x, r, orient);
@@ -549,7 +539,7 @@ static int sd_difference(lua_State* L)
   if (!lua_is_sd_func(L, 2))
     return luaL_error(L, "Argument 2 must be an sd_func.");
 
-  sd_func_t* f = difference_sd_func_new(lua_to_sd_func(L, 1), 
+  sd_func_t* f = difference_sd_func_new(lua_to_sd_func(L, 1),
                                         lua_to_sd_func(L, 2));
   lua_push_sd_func(L, f);
   return 1;
@@ -726,7 +716,7 @@ static int sdt_new(lua_State* L)
   lua_obj_t* lo = polymec_malloc(sizeof(lua_obj_t));
   lo->L = L;
 
-  // Store the table representing our object in the registry, with 
+  // Store the table representing our object in the registry, with
   // context as a key.
   lua_pushvalue(L, obj_index);
   lua_rawsetp(L, LUA_REGISTRYINDEX, lo);
@@ -1180,8 +1170,8 @@ static int pp_quad(lua_State* L)
     luaL_error(L, "periodic_in_y must be true or false.");
   periodic_in_y = lua_toboolean(L, -1);
 
-  planar_polymesh_t* mesh = create_quad_planar_polymesh(nx, ny, bbox, 
-                                                        periodic_in_x, 
+  planar_polymesh_t* mesh = create_quad_planar_polymesh(nx, ny, bbox,
+                                                        periodic_in_x,
                                                         periodic_in_y);
   lua_push_planar_polymesh(L, mesh);
   return 1;
@@ -1363,12 +1353,12 @@ static int pc_new(lua_State* L)
   int num_args = lua_gettop(L);
   if ((num_args != 2) && (num_args != 3))
   {
-    luaL_error(L, "Arguments must be an MPI communicator, a list of points, "
+    luaL_error(L, "Arguments must be an mpi.comm, a list of points, "
                   "and (optionally) a number of ghost points.");
   }
 
   if (!lua_is_mpi_comm(L, 1) )
-    luaL_error(L, "Argument 1 must be an MPI communicator.");
+    luaL_error(L, "Argument 1 must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, 1);
 
   point_t* points = NULL;
@@ -1488,7 +1478,7 @@ static int um_new(lua_State* L)
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi.comm object.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "bbox");
@@ -1567,13 +1557,41 @@ static int um_new(lua_State* L)
   return 1;
 }
 
+static int um_repartition(lua_State* L)
+{
+  // Check the arguments.
+  int num_args = lua_gettop(L);
+  if ((num_args != 1) || !lua_is_unimesh(L, 1))
+    return luaL_error(L, "Argument must be a unimesh.");
+  unimesh_t* mesh = lua_to_unimesh(L, 1);
+  real_t imbalance_tol = 0.05;
+
+  // Bug out if there's only one process.
+  int nprocs;
+  MPI_Comm_size(unimesh_comm(mesh), &nprocs);
+  if (nprocs == 1)
+    return 0;
+
+  // Perform the repartitioning. FIXME: Add fields
+  repartition_unimesh(&mesh, NULL, imbalance_tol, NULL, 0);
+  return 0;
+}
+
 static lua_module_function um_funcs[] = {
   {"new", um_new, "unimesh.new{comm, bbox, npx, npy, npz, nx, ny, nz} -> "
                   "Creates a new uniform mesh on the communicator comm, which "
                   "fills the bounding box bbox with a lattice of npx x npy x npz "
                   "patches, each having nx x ny x nz identical cells."},
+  {"repartition", um_repartition, "unimesh.repartition(m) -> Repartitions the colmesh m."},
   {NULL, NULL, NULL}
 };
+
+static int um_is_finalized(lua_State* L)
+{
+  unimesh_t* m = lua_to_unimesh(L, 1);
+  lua_pushboolean(L, unimesh_is_finalized(m));
+  return 1;
+}
 
 static int um_bbox(lua_State* L)
 {
@@ -1652,6 +1670,7 @@ static int um_patches(lua_State* L)
 }
 
 static lua_class_field um_fields[] = {
+  {"is_finalized", um_is_finalized, NULL},
   {"bbox", um_bbox, NULL},
   {"spacings", um_spacings, NULL},
   {"extents", um_extents, NULL},
@@ -1663,7 +1682,7 @@ static lua_class_field um_fields[] = {
 static int um_tostring(lua_State* L)
 {
   unimesh_t* m = lua_to_unimesh(L, 1);
-  lua_pushfstring(L, "unimesh (%d local patches)", 
+  lua_pushfstring(L, "unimesh (%d local patches)",
                   unimesh_num_patches(m));
   return 1;
 }
@@ -1673,34 +1692,333 @@ static lua_class_method um_methods[] = {
   {NULL, NULL, NULL}
 };
 
-static int colmesh_repartition(lua_State* L)
+static int bm_new_(lua_State* L)
+{
+  if (!lua_is_mpi_comm(L, 1))
+    luaL_error(L, "Argument 1 must be an mpi.comm.");
+  MPI_Comm comm = lua_to_mpi_comm(L, 1);
+  if (!lua_isinteger(L, 2))
+    luaL_error(L, "Argument 2 must be a positive number of x cells in a patch.");
+  int patch_nx = (int)lua_tointeger(L, 2);
+  if (patch_nx <= 0)
+    luaL_error(L, "Argument 2 must be a positive number of x cells in a patch.");
+  if (!lua_isinteger(L, 3))
+    luaL_error(L, "Argument 3 must be a positive number of y cells in a patch.");
+  int patch_ny = (int)lua_tointeger(L, 3);
+  if (patch_ny <= 0)
+    luaL_error(L, "Argument 2 must be a positive number of y cells in a patch.");
+  if (!lua_isinteger(L, 4))
+    luaL_error(L, "Argument 4 must be a positive number of z cells in a patch.");
+  int patch_nz = (int)lua_tointeger(L, 4);
+  if (patch_nz <= 0)
+    luaL_error(L, "Argument 4 must be a positive number of z cells in a patch.");
+
+  blockmesh_t* mesh = blockmesh_new(comm, patch_nx, patch_ny, patch_nz);
+  lua_push_blockmesh(L, mesh);
+  return 1;
+}
+
+static int bm_repartition(lua_State* L)
 {
   // Check the arguments.
   int num_args = lua_gettop(L);
-  if ((num_args != 1) || !lua_is_colmesh(L, 1))
-    return luaL_error(L, "Argument must be a colmesh.");
-  colmesh_t* mesh = lua_to_colmesh(L, 1);
+  if ((num_args != 1) || !lua_is_blockmesh(L, 1))
+    return luaL_error(L, "Argument must be a blockmesh.");
+  blockmesh_t* mesh = lua_to_blockmesh(L, 1);
   real_t imbalance_tol = 0.05;
 
   // Bug out if there's only one process.
   int nprocs;
-  MPI_Comm_size(colmesh_comm(mesh), &nprocs);
+  MPI_Comm_size(blockmesh_comm(mesh), &nprocs);
   if (nprocs == 1)
     return 0;
 
   // Perform the repartitioning. FIXME: Add fields
-  repartition_colmesh(&mesh, NULL, imbalance_tol, NULL, 0);
+  repartition_blockmesh(&mesh, NULL, imbalance_tol, NULL, 0);
   return 0;
 }
+
+static lua_module_function bm_funcs[] = {
+  {"new", bm_new_, "blockmesh.new(comm, patch_nx, patch_ny, patch_nz) -> New empty block-structured mesh with the given patch diemensions."},
+  {"repartition", bm_repartition, "blockmesh.repartition(m) -> Repartitions the blockmesh m."},
+  {NULL, NULL, NULL}
+};
+
+static int bm_is_finalized(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  lua_pushboolean(L, blockmesh_is_finalized(m));
+  return 1;
+}
+
+static int bm_num_blocks(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  lua_pushinteger(L, (lua_Integer)blockmesh_num_blocks(m));
+  return 1;
+}
+
+static int bm_comm(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  lua_push_mpi_comm(L, blockmesh_comm(m));
+  return 1;
+}
+
+static lua_class_field bm_fields[] = {
+  {"is_finalized", bm_is_finalized, NULL},
+  {"num_blocks", bm_num_blocks, NULL},
+  {"comm", bm_comm, NULL},
+  {NULL, NULL, NULL}
+};
+
+static int bm_block(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  if (m == NULL)
+    luaL_error(L, "Method must be invoked with a blockmesh.");
+  if (!lua_isinteger(L, 2))
+    return luaL_error(L, "Argument must be a block index.");
+  int index = (int)(lua_tointeger(L, 2));
+  if (index < 0)
+    return luaL_error(L, "Block index must be non-negative.");
+  if ((size_t)index >= blockmesh_num_blocks(m))
+    return luaL_error(L, "Invalid block index: %d", index);
+  lua_push_unimesh(L, blockmesh_block(m, index));
+  return 1;
+}
+
+static int bm_add_block(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  if (m == NULL)
+    luaL_error(L, "Method must be invoked with a blockmesh.");
+  int num_args = lua_gettop(L);
+  if (((num_args != 2) && (num_args == 4)) ||
+      ((num_args == 2) && !lua_istable(L, 2)) ||
+      ((num_args == 4) && (!lua_isinteger(L, 2) || !lua_isinteger(L, 3) ||
+                           !lua_isinteger(L, 4))))
+  {
+    luaL_error(L, "mesh:add_block must be called with the following arguments, "
+                  "or with a table with the following fields: "
+                  "num_x_patches, num_y_patches, and num_z_patches");
+  }
+  bool table_args = (num_args == 2);
+
+  int npx;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "num_x_patches");
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "num_x_patches must be a positive integer.");
+    npx = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  else
+    npx = (int)lua_tointeger(L, 2);
+  if (npx <= 0)
+    return luaL_error(L, "num_x_patches must be positive.");
+
+  int npy;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "num_y_patches");
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "num_y_patches must be a positive integer.");
+    npy = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  else
+    npy = (int)lua_tointeger(L, 3);
+  if (npy <= 0)
+    return luaL_error(L, "num_y_patches must be positive.");
+
+  int npz;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "num_z_patches");
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "num_z_patches must be a positive integer.");
+    npz = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  else
+    npz = (int)lua_tointeger(L, 4);
+  if (npz <= 0)
+    return luaL_error(L, "num_z_patches must be positive.");
+
+  blockmesh_add_block(m, npx, npy, npz);
+  return 0;
+}
+
+static int bm_connect_blocks(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  if (m == NULL)
+    luaL_error(L, "Method must be invoked with a blockmesh.");
+
+  int num_args = lua_gettop(L);
+  if (((num_args != 4) && (num_args != 2)) ||
+      ((num_args == 2) && !lua_istable(L, 2)) ||
+      ((num_args == 4) && (!lua_isinteger(L, 2) || !lua_istable(L, 3) ||
+                           !lua_isinteger(L, 4) || !lua_istable(L, 5))))
+  {
+    luaL_error(L, "mesh:connect_blocks must be called with the following arguments, "
+                  "or with a table containing these fields: "
+                  "block1_index, block1_nodes, block2_index, and block2_nodes");
+  }
+  bool table_args = (num_args == 2);
+
+  int index1;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "block1_index");
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "block1_index must be a valid block index.");
+    index1 = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  else
+    index1 = (int)lua_tointeger(L, 2);
+  if ((index1 < 1) || ((size_t)index1 > blockmesh_num_blocks(m)))
+    return luaL_error(L, "Invalid index for first block: %d.", index1);
+
+  int nodes1[4], arg_index;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "block1_nodes");
+    if (!lua_istable(L, -1))
+      return luaL_error(L, "block1_nodes must be a list of 4 node indices.");
+    arg_index = -1;
+  }
+  else
+    arg_index = 3;
+  for (int i = 1; i <= 4; ++i)
+  {
+    lua_rawgeti(L, arg_index, i);
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "block1_nodes must be a list of 4 node indices.");
+    int node = (int)lua_tointeger(L, -1);
+    if ((node < 1) || (node > 8))
+      return luaL_error(L, "block %d node %d is %d (must be between 1 and 8).", index1, i, node);
+    nodes1[i-1] = node;
+    lua_pop(L, 1);
+  }
+  if (table_args)
+    lua_pop(L, 1);
+
+  int index2;
+  if (table_args)
+  {
+    lua_getfield(L, 2, "block2_index");
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "block2_index must be a valid block index.");
+    index2 = (int)lua_tointeger(L, -1);
+    if ((index2 < 1) || ((size_t)index2 > blockmesh_num_blocks(m)))
+      return luaL_error(L, "Invalid index for second block: %d.", index2);
+    lua_pop(L, 1);
+  }
+  else
+    index2 = (int)lua_tointeger(L, 4);
+
+  int nodes2[4];
+  if (table_args)
+  {
+    lua_getfield(L, 2, "block2_nodes");
+    if (!lua_istable(L, -1))
+      return luaL_error(L, "block2_nodes must be a list of 4 node indices.");
+    arg_index = -1;
+  }
+  else
+    arg_index = 5;
+
+  for (int i = 1; i <= 4; ++i)
+  {
+    lua_rawgeti(L, arg_index, i);
+    if (!lua_isinteger(L, -1))
+      return luaL_error(L, "block2_nodes must be a list of 4 node indices.");
+    int node = (int)lua_tointeger(L, -1);
+    if ((node < 1) || (node > 8))
+      return luaL_error(L, "block %d node %d is %d (must be between 1 and 8).", index2, i, node);
+    nodes2[i-1] = node;
+    lua_pop(L, 1);
+  }
+  if (!table_args)
+    lua_pop(L, 1);
+
+  // Translate from Lua (1-based) indices to C (0-based) indices.
+  int c_index1 = index1 - 1;
+  int c_index2 = index2 - 1;
+  int c_nodes1[4], c_nodes2[4];
+  for (int i = 0; i < 4; ++i)
+  {
+    c_nodes1[i] = nodes1[i] - 1;
+    c_nodes2[i] = nodes2[i] - 1;
+  }
+
+  char* err;
+  if (!blockmesh_can_connect_blocks(m, c_index1, c_nodes1, c_index2, c_nodes2, &err))
+    return luaL_error(L, "Couldn't connect blocks %d and %d: %s", index1, index2, err);
+
+  blockmesh_connect_blocks(m, c_index1, c_nodes1, c_index2, c_nodes2);
+  return 0;
+}
+
+static int bm_finalize(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  if (m == NULL)
+    luaL_error(L, "Method must be invoked with a blockmesh.");
+  if (blockmesh_is_finalized(m))
+    luaL_error(L, "Blockmesh has already been finalized!");
+  blockmesh_finalize(m);
+  return 0;
+}
+
+static int bm_tostring(lua_State* L)
+{
+  blockmesh_t* m = lua_to_blockmesh(L, 1);
+  if (m == NULL)
+    luaL_error(L, "Method must be invoked with a blockmesh.");
+  lua_pushfstring(L, "blockmesh (%d blocks)", (int)blockmesh_num_blocks(m));
+  return 1;
+}
+
+static lua_class_method bm_methods[] = {
+  {"block", bm_block, "mesh:block(index) -> Returns the block in the mesh "
+                      "with the given index."},
+  {"add_block", bm_add_block, "mesh:add_block(NPX, NPY, NPZ) OR "
+                              "mesh:add_block{num_x_patches = NPX, "
+                              "num_y_patches = NPY, num_z_patches = NPZ} "
+                              "- Adds a new empty block to this mesh with the "
+                              "given numbers of patches in x, y, and z."},
+  {"connect_blocks", bm_connect_blocks, "mesh:connect_blocks(B1, B1_NODES, "
+                                        "B2, B2_NODES) OR "
+                                        "mesh:connect_blocks{block1_index = "
+                                        "B1, block1_nodes = B1_NODES, "
+                                        "block2_index = B2, "
+                                        "block2_nodes = B2_NODES} -> Connects "
+                                        "two blocks with indices B1 and B2 in "
+                                        "the mesh, specifying the nodes to "
+                                        "identify on the boundary with "
+                                        "B1_NODES and B2_NODES."},
+  {"finalize", bm_finalize, "mesh:finalize() - Finalizes a block mesh after "
+                            "assembly."},
+  {"__tostring", bm_tostring, NULL},
+  {NULL, NULL, NULL}
+};
 
 static int colmesh_new_(lua_State* L)
 {
   if (!lua_istable(L, 1))
-    luaL_error(L, "Argument must be a table with comm, columns, z1, z2, nz, periodic_in_z fields.");
+  {
+    luaL_error(L, "Argument must be a table with comm, columns, z1, z2, nz, "
+                  "periodic_in_z fields.");
+  }
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi_comm.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "columns");
@@ -1745,7 +2063,7 @@ static int colmesh_quad(lua_State* L)
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi_comm.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "nx");
@@ -1792,7 +2110,7 @@ static int colmesh_quad(lua_State* L)
     luaL_error(L, "periodic_in_z must be true or false.");
   periodic_in_z = lua_toboolean(L, -1);
 
-  planar_polymesh_t* columns = create_quad_planar_polymesh(nx, ny, bbox, 
+  planar_polymesh_t* columns = create_quad_planar_polymesh(nx, ny, bbox,
                                                            periodic_in_x, periodic_in_y);
   colmesh_t* mesh = colmesh_new(comm, columns, bbox->z1, bbox->z2, nz, periodic_in_z);
   planar_polymesh_free(columns);
@@ -1807,7 +2125,7 @@ static int colmesh_hex(lua_State* L)
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi_comm.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "radius");
@@ -1854,6 +2172,26 @@ static int colmesh_hex(lua_State* L)
   planar_polymesh_free(columns);
   lua_push_colmesh(L, mesh);
   return 1;
+}
+
+static int colmesh_repartition(lua_State* L)
+{
+  // Check the arguments.
+  int num_args = lua_gettop(L);
+  if ((num_args != 1) || !lua_is_colmesh(L, 1))
+    return luaL_error(L, "Argument must be a colmesh.");
+  colmesh_t* mesh = lua_to_colmesh(L, 1);
+  real_t imbalance_tol = 0.05;
+
+  // Bug out if there's only one process.
+  int nprocs;
+  MPI_Comm_size(colmesh_comm(mesh), &nprocs);
+  if (nprocs == 1)
+    return 0;
+
+  // Perform the repartitioning. FIXME: Add fields
+  repartition_colmesh(&mesh, NULL, imbalance_tol, NULL, 0);
+  return 0;
 }
 
 static lua_module_function colmesh_funcs[] = {
@@ -1952,8 +2290,8 @@ static int colmesh_tostring(lua_State* L)
     snprintf(periodic_str, 11, " (periodic)");
   else
     periodic_str[0] = '\0';
-  lua_pushfstring(L, "colmesh (%d chunks, %d xy chunks, %d z chunks, nz = %d, z1 = %g, z2 = %g%s)", 
-                  (int)colmesh_num_chunks(m), (int)num_xy_chunks, (int)num_z_chunks, 
+  lua_pushfstring(L, "colmesh (%d chunks, %d xy chunks, %d z chunks, nz = %d, z1 = %g, z2 = %g%s)",
+                  (int)colmesh_num_chunks(m), (int)num_xy_chunks, (int)num_z_chunks,
                   (int)nz_per_chunk, (double)z1, z2, periodic_str);
   return 1;
 }
@@ -1970,7 +2308,7 @@ static int polymesh_uniform(lua_State* L)
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi.comm object.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "nx");
@@ -2066,7 +2404,7 @@ static int polymesh_rectilinear(lua_State* L)
 
   lua_getfield(L, 1, "comm");
   if (!lua_is_mpi_comm(L, -1))
-    luaL_error(L, "comm must be an mpi.comm object.");
+    luaL_error(L, "comm must be an mpi.comm.");
   MPI_Comm comm = lua_to_mpi_comm(L, -1);
 
   lua_getfield(L, 1, "xs");
@@ -2090,9 +2428,9 @@ static int polymesh_rectilinear(lua_State* L)
     rank = (int)lua_tointeger(L, -1);
 
   polymesh_t* mesh = NULL;
-  if (rank == -1) 
+  if (rank == -1)
   {
-    mesh = create_rectilinear_polymesh(comm, 
+    mesh = create_rectilinear_polymesh(comm,
                                        xs->data, (int)xs->size,
                                        ys->data, (int)ys->size,
                                        zs->data, (int)zs->size);
@@ -2195,7 +2533,7 @@ static lua_class_field polymesh_fields[] = {
 static int polymesh_tostring(lua_State* L)
 {
   polymesh_t* m = lua_to_polymesh(L, 1);
-  lua_pushfstring(L, "polymesh (%d cells, %d faces, %d nodes)", 
+  lua_pushfstring(L, "polymesh (%d cells, %d faces, %d nodes)",
                   m->num_cells, m->num_faces, m->num_nodes);
   return 1;
 }
@@ -2210,13 +2548,13 @@ static lua_module_function points_funcs[] = {
 };
 
 //------------------------------------------------------------------------
-//                                API 
+//                                API
 //------------------------------------------------------------------------
 
 int lua_register_geometry_modules(lua_State* L)
 {
   // Core types.
-  lua_register_class(L, "coord_mapping", "A coordinate mapping.", cm_funcs, NULL, cm_methods, NULL);
+  lua_register_class(L, "coord_mapping", "A coordinate mapping.", cm_funcs, cm_fields, cm_methods, NULL);
   lua_register_class(L, "sd_func", "A signed distance function.", sd_funcs, sd_fields, sd_methods, NULL);
   lua_register_class(L, "sdt_func", "A time-dependent signed distance function.", sdt_funcs, sdt_fields, sdt_methods, NULL);
   lua_register_class(L, "polygon", "A polygon in the plane.", p2_funcs, p2_fields, p2_methods, NULL);
@@ -2225,9 +2563,26 @@ int lua_register_geometry_modules(lua_State* L)
   lua_register_class(L, "tagger", "An object that holds tags.", tagger_funcs, NULL, tagger_methods, NULL);
   lua_register_class(L, "point_cloud", "A point cloud in 3D space.", pc_funcs, pc_fields, pc_methods, DTOR(point_cloud_free));
   lua_register_class(L, "unimesh", "A uniform cartesian mesh.", um_funcs, um_fields, um_methods, DTOR(unimesh_free));
+  lua_register_class(L, "blockmesh", "A block-structured mesh.", bm_funcs, bm_fields, bm_methods, DTOR(blockmesh_free));
   lua_register_class(L, "colmesh", "A polygonal extruded (pex) mesh.", colmesh_funcs, colmesh_fields, colmesh_methods, DTOR(colmesh_free));
   lua_register_class(L, "polymesh", "An arbitrary polyhedral mesh.", polymesh_funcs, polymesh_fields, polymesh_methods, DTOR(polymesh_free));
   lua_register_class(L, "planar_polymesh", "A planar polygonal mesh.", pp_funcs, pp_fields, pp_methods, DTOR(planar_polymesh_free));
+
+  // Register some helpful symbols for unimesh.
+  lua_getglobal(L, "unimesh");
+  lua_pushinteger(L, (int)UNIMESH_X1_BOUNDARY);
+  lua_setfield(L, -2, "x1_boundary");
+  lua_pushinteger(L, (int)UNIMESH_X2_BOUNDARY);
+  lua_setfield(L, -2, "x2_boundary");
+  lua_pushinteger(L, (int)UNIMESH_Y1_BOUNDARY);
+  lua_setfield(L, -2, "y1_boundary");
+  lua_pushinteger(L, (int)UNIMESH_Y2_BOUNDARY);
+  lua_setfield(L, -2, "y2_boundary");
+  lua_pushinteger(L, (int)UNIMESH_Z1_BOUNDARY);
+  lua_setfield(L, -2, "z1_boundary");
+  lua_pushinteger(L, (int)UNIMESH_Z2_BOUNDARY);
+  lua_setfield(L, -2, "z2_boundary");
+  lua_pop(L, 1);
 
   // Register a module of point factory methods.
   lua_register_module(L, "points", "Functions for generating points.", NULL, points_funcs);
@@ -2368,6 +2723,21 @@ bool lua_is_unimesh(lua_State* L, int index)
 unimesh_t* lua_to_unimesh(lua_State* L, int index)
 {
   return (unimesh_t*)lua_to_object(L, index, "unimesh");
+}
+
+void lua_push_blockmesh(lua_State* L, blockmesh_t* m)
+{
+  lua_push_object(L, "blockmesh", m);
+}
+
+bool lua_is_blockmesh(lua_State* L, int index)
+{
+  return lua_is_object(L, index, "blockmesh");
+}
+
+blockmesh_t* lua_to_blockmesh(lua_State* L, int index)
+{
+  return (blockmesh_t*)lua_to_object(L, index, "blockmesh");
 }
 
 void lua_push_colmesh(lua_State* L, colmesh_t* m)
